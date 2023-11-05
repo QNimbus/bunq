@@ -1,0 +1,67 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Chisel client",
+            "type": "process",
+            "command": "scripts/chisel.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true,
+                "close": true,
+                "group": "Chisel proxy"
+            },
+            // This task is run before some debug tasks.
+            // Problem is, it's a watch script, and since it never exits, VSCode
+            // complains. All this is needed so VSCode just lets it run.
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 0,
+                            "line": 0,
+                            "column": 0,
+                            "severity": 0,
+                            "location": 0,
+                            "message": 0
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "Terminate Chisel client",
+            "type": "shell",
+            "command": "ps -ef | grep chisel | grep -v grep | awk '{print $2}' | xargs kill -9",
+            "args": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true,
+                "close": true,
+                "group": "Chisel proxy"
+            },
+            "isBackground": true,
+            "problemMatcher": []
+        }
+    ]
+}

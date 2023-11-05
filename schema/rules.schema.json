@@ -1,0 +1,144 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "definitions": {
+        "actionDefinition": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "title": "Action Type",
+                            "enum": [
+                                "CREATE_REQUEST"
+                            ]
+                        },
+                        "data": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "data"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "action"
+            ],
+            "additionalProperties": true
+        },
+        "rule": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "title": "Rule Type",
+                    "enum": [
+                        "REGEX",
+                        "EQUALS",
+                        "DOES_NOT_EQUAL",
+                        "IS_EMPTY",
+                        "IS_NOT_EMPTY",
+                        "IS_NEGATIVE",
+                        "IS_POSITIVE",
+                        "CONTAINS",
+                        "DOES_NOT_CONTAIN"
+                    ]
+                },
+                "value": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "property": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "type",
+                "property"
+            ],
+            "additionalProperties": true
+        },
+        "ruleGroup": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "condition": {
+                    "type": "string",
+                    "enum": [
+                        "ALL",
+                        "ANY",
+                        "NONE"
+                    ]
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/rule"
+                            },
+                            {
+                                "$ref": "#/definitions/ruleGroup"
+                            }
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "condition",
+                "rules"
+            ],
+            "additionalProperties": true
+        }
+    },
+    "type": "array",
+    "title": "Rules",
+    "items": {
+        "type": "object",
+        "title": "RuleRoot",
+        "oneOf": [
+            {
+                "type": "object",
+                "title": "Rule root",
+                "allOf": [
+                    {
+                        "$ref": "#/definitions/actionDefinition"
+                    },
+                    {
+                        "$ref": "#/definitions/rule"
+                    }
+                ]
+            },
+            {
+                "type": "object",
+                "title": "RuleGroup root",
+                "allOf": [
+                    {
+                        "$ref": "#/definitions/actionDefinition"
+                    },
+                    {
+                        "$ref": "#/definitions/ruleGroup"
+                    }
+                ]
+            }
+        ]
+    }
+}

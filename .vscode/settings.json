@@ -1,0 +1,11 @@
+{
+    "python.envFile": "${workspaceFolder}/.env",
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "*.rules.json"
+            ],
+            "url": "/schema/rules.schema.json"
+        }
+    ],
+}

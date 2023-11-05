@@ -1,0 +1,388 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "NotificationUrl": {
+            "type": "object",
+            "properties": {
+                "target_url": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "object",
+                    "properties": {
+                        "Payment": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "created": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "updated": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                "monetary_account_id": {
+                                    "type": "integer"
+                                },
+                                "amount": {
+                                    "type": "object",
+                                    "properties": {
+                                        "currency": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "currency",
+                                        "value"
+                                    ]
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                },
+                                "merchant_reference": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                },
+                                "alias": {
+                                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                                },
+                                "counterparty_alias": {
+                                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                                },
+                                "attachment": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "geolocation": {
+                                    "type": "object",
+                                    "properties": {
+                                        "latitude": {
+                                            "type": "number"
+                                        },
+                                        "longitude": {
+                                            "type": "number"
+                                        },
+                                        "altitude": {
+                                            "type": "number"
+                                        },
+                                        "radius": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "required": [
+                                        "latitude",
+                                        "longitude",
+                                        "altitude",
+                                        "radius"
+                                    ]
+                                },
+                                "batch_id": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                },
+                                "scheduled_id": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                },
+                                "address_billing": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                },
+                                "address_shipping": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                },
+                                "sub_type": {
+                                    "type": "string"
+                                },
+                                "request_reference_split_the_bill": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "balance_after_mutation": {
+                                    "type": "object",
+                                    "properties": {
+                                        "currency": {
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "currency",
+                                        "value"
+                                    ]
+                                },
+                                "payment_auto_allocate_instance": {
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "created",
+                                "updated",
+                                "monetary_account_id",
+                                "amount",
+                                "description",
+                                "type",
+                                "alias",
+                                "counterparty_alias",
+                                "attachment",
+                                "geolocation",
+                                "sub_type",
+                                "request_reference_split_the_bill",
+                                "balance_after_mutation"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "Payment"
+                    ]
+                }
+            },
+            "required": [
+                "target_url",
+                "category",
+                "event_type",
+                "object"
+            ]
+        }
+    },
+    "required": [
+        "NotificationUrl"
+    ],
+    "definitions": {
+        "aliasOrCounterpartyAlias": {
+            "type": "object",
+            "properties": {
+                "iban": {
+                    "type": "string"
+                },
+                "is_light": {
+                    "type": "boolean"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "avatar": {
+                    "type": "object",
+                    "properties": {
+                        "uuid": {
+                            "type": "string"
+                        },
+                        "image": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "attachment_public_uuid": {
+                                        "type": "string"
+                                    },
+                                    "height": {
+                                        "type": "integer"
+                                    },
+                                    "width": {
+                                        "type": "integer"
+                                    },
+                                    "content_type": {
+                                        "type": "string"
+                                    },
+                                    "urls": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "type",
+                                                "url"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "attachment_public_uuid",
+                                    "height",
+                                    "width",
+                                    "content_type",
+                                    "urls"
+                                ]
+                            }
+                        },
+                        "anchor_uuid": {
+                            "type": [
+                                "null",
+                                "string"
+                            ]
+                        },
+                        "style": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "uuid",
+                        "image",
+                        "anchor_uuid",
+                        "style"
+                    ]
+                },
+                "label_user": {
+                    "$ref": "#/definitions/labelUser"
+                },
+                "country": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "iban",
+                "is_light",
+                "display_name",
+                "avatar",
+                "label_user",
+                "country"
+            ]
+        },
+        "labelUser": {
+            "type": "object",
+            "properties": {
+                "uuid": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "avatar": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "uuid": {
+                            "type": "string"
+                        },
+                        "image": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "attachment_public_uuid": {
+                                        "type": "string"
+                                    },
+                                    "height": {
+                                        "type": "integer"
+                                    },
+                                    "width": {
+                                        "type": "integer"
+                                    },
+                                    "content_type": {
+                                        "type": "string"
+                                    },
+                                    "urls": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "type": {
+                                                    "type": "string"
+                                                },
+                                                "url": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "type",
+                                                "url"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "attachment_public_uuid",
+                                    "height",
+                                    "width",
+                                    "content_type",
+                                    "urls"
+                                ]
+                            }
+                        },
+                        "anchor_uuid": {
+                            "type": "string"
+                        },
+                        "style": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "uuid",
+                        "image",
+                        "anchor_uuid",
+                        "style"
+                    ]
+                },
+                "public_nick_name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "uuid",
+                "display_name",
+                "country",
+                "avatar",
+                "public_nick_name",
+                "type"
+            ]
+        }
+    }
+}

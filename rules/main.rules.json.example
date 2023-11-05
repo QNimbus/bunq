@@ -1,0 +1,56 @@
+[
+    {
+        "rule_name": "GroceryStore",
+        "rule_description": "Payment is from a grocery store",
+        "rule_action": "make_payment_request",
+        "condition": "ALL",
+        "rules": [
+            {
+                "rule_type": "EQUALS",
+                "rule_value": "EUR",
+                "property": "amount.currency",
+                "rule_description": "Payment currency must be EUR"
+            },
+            {
+                "rule_type": "IS_NEGATIVE",
+                "property": "amount.value",
+                "rule_description": "Payment amount must be negative"
+            },
+            {
+                "rule_type": "DOES_NOT_CONTAIN",
+                "rule_value": [
+                    "NL01ABNA000123456"
+                ],
+                "property": "alias.iban",
+                "rule_description": "Payment must not be from the 'Boodschappen' account"
+            },
+            {
+                "condition": "ANY",
+                "rules": [
+                    {
+                        "rule_type": "CONTAINS",
+                        "rule_value": [
+                            "Albert Heijn",
+                            "Lidl",
+                            "Jumbo",
+                            "Bakkerij",
+                            "Kruidvat",
+                            "Kaashandel",
+                            "Thuisbezorgd.nl"
+                        ],
+                        "property": "counterparty_alias.display_name",
+                        "rule_description": "Payment must be from a grocery store"
+                    },
+                    {
+                        "rule_type": "CONTAINS",
+                        "rule_value": [
+                            "test"
+                        ],
+                        "property": "description",
+                        "rule_description": "Description contains the word 'test'"
+                    }
+                ]
+            }
+        ]
+    }
+]

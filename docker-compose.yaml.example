@@ -1,0 +1,23 @@
+services:
+  bunq:
+    container_name: bunq
+    image: besquared/bunq
+    build: .
+    restart: unless-stopped
+    logging:
+      driver: 'local'
+      options:
+        max-size: '10m'
+        max-file: '5'
+        compress: 'true'
+    environment:
+      - CHISEL_SERVER_URL="chisel-server:8080"
+      - CHISEL_SERVER_AUTH="username:password"
+      - CHISEL_SERVER_FINGERPRINT="sg2VOIq1TLXdXB1P05bAHFy7pv5njsgWX3fF0eOu22I="
+    volumes:
+      - type: volume
+        source: bunq_data          
+        target: /app/conf
+        read_only: false
+    # command: ["./bunq", "-config", "/app/conf/config.json"]
+    command: ["ls", "-la"]
