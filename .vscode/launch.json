@@ -30,6 +30,19 @@
     ],
     "configurations": [
         {
+            "name": "Bunq: Debug app.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "--production",
+                "create-config"
+            ],
+            "justMyCode": true
+        },
+        {
             "name": "Bunq: Create production configuration",
             "type": "python",
             "request": "launch",
@@ -80,7 +93,7 @@
             "preLaunchTask": "Chisel client",
             "postDebugTask": "Terminate Chisel client",
             "jinja": true,
-            "justMyCode": true,
+            "justMyCode": false,
         },
         {
             "name": "Bunq: Delete all statements",

@@ -6,7 +6,7 @@
         {
             "label": "Chisel client",
             "type": "process",
-            "command": "scripts/chisel.sh",
+            "command": "scripts/start_chisel.sh",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

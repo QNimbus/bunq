@@ -32,14 +32,10 @@ def parse_date(date_str):
         argparse.ArgumentTypeError: If the date string is not in the correct format.
     """
     try:
-        date_obj = datetime.datetime.strptime(
-            date_str, "%Y-%m-%d"
-        )  # Adjust the date format as needed
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")  # Adjust the date format as needed
         return date_obj
     except ValueError as exc:
-        raise argparse.ArgumentTypeError(
-            f"Invalid date format: {date_str}. Use YYYY-MM-DD format."
-        ) from exc
+        raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Use YYYY-MM-DD format.") from exc
 
 
 class Action(Enum):
@@ -83,25 +79,15 @@ class CLIArgs:
         )
 
         # Add subparsers for each action.
-        self.subparsers = self.parser.add_subparsers(
-            dest="action", required=True, help="Action to perform."
-        )
+        self.subparsers = self.parser.add_subparsers(dest="action", required=True, help="Action to perform.")
 
-        self.action_create_config_parser = self.subparsers.add_parser(
-            Action.CREATE_CONFIG.value, help="Create a configuration file."
-        )
+        self.action_create_config_parser = self.subparsers.add_parser(Action.CREATE_CONFIG.value, help="Create a configuration file.")
 
-        self.action_export_parser = self.subparsers.add_parser(
-            Action.EXPORT.value, help="Export data."
-        )
+        self.action_export_parser = self.subparsers.add_parser(Action.EXPORT.value, help="Export data.")
 
-        self.action_create_request_parser = self.subparsers.add_parser(
-            Action.CREATE_REQUEST.value, help="Create a request for payment."
-        )
+        self.action_create_request_parser = self.subparsers.add_parser(Action.CREATE_REQUEST.value, help="Create a request for payment.")
 
-        self.action_remove_all_statements_parser = self.subparsers.add_parser(
-            Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements."
-        )
+        self.action_remove_all_statements_parser = self.subparsers.add_parser(Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements.")
 
         self.action_create_config_parser.add_argument(
             CLIArgs._ACTION_CREATE_CONFIG_API_KEY,
@@ -119,7 +105,7 @@ class CLIArgs:
         self.action_export_parser.add_argument(
             CLIArgs._ACTION_EXPORT_PATH,
             required=False,
-            default=os.environ.get("EXPORT_PATH", "./statements"),
+            default=os.environ.get("EXPORT_PATH", "./data"),
             help="Exported statements path.",
         )
 

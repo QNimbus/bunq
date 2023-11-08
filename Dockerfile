@@ -10,35 +10,25 @@ COPY requirements.txt /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install curl
-# Remember to update and clean up the apt cache to keep the image small
-RUN apt-get update && \
-    apt-get install -y curl && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install chisel
-RUN curl https://i.jpillora.com/chisel! | bash
-
 # Copy the current directory contents into the container at /app
 COPY . /app
-
-# Make scripts executable
-RUN chmod +x /app/scripts/entrypoint.sh
-RUN chmod +x /app/scripts/chisel.sh
 
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Set the entrypoint script
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+# Make scripts executable
+RUN chmod +x /app/scripts/start_chisel.sh
 
-# Environment variables (replace with correct values)
-ENV CHISEL_SERVER_URL="chisel-server:8080"
-ENV CHISEL_SERVER_AUTH="username:password"
-ENV CHISEL_SERVER_FINGERPRINT="sg2VOIq1TLXdXB1P05bAHFy7pv5njsgWX3fF0eOu22I="
+VOLUME /app/conf /app/data
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
+# Environment variables
+ENV PYTHONWARNINGS=ignore
+ENV LOGL_LEVEL=INFO
+ENV PRODUCTION=True
+ENV ALLOWED_IPS="0.0.0.0/0"
+ENV GUNICORN_WORKERS=4
+ENV GUNICORN_TIMEOUT=5
+ENV GUNICORN_PORT=5000
 
-# Run app.py when the container launches
-CMD ["python", "./app.py"]
+# Run bunq callback server
+CMD [ "/bin/sh", "-c", "gunicorn --workers=${GUNICORN_WORKERS} --timeout=${GUNICORN_TIMEOUT} --bind=0.0.0.0:${GUNICORN_PORT} \"server:create_server()\"" ]

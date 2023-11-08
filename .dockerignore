@@ -1,5 +1,12 @@
 # Bunq config files
 .bunq*
+.git
+.git*
+.dockerignore
+docker-compose.*
+Dockerfile*
+
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

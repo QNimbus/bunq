@@ -14,7 +14,7 @@ from flask import Flask, jsonify, request, current_app
 # ...
 
 # from schema import payment_model
-from libs.log import setup_logger
+from libs.log import setup_logger, setup_logger_with_rotating_file_handler
 from libs.decorator import route, routes
 from libs.rules import process_rules, load_rules
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
@@ -23,6 +23,9 @@ from schema.callback_model import Model as CallbackModel
 
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
+callback_logger = setup_logger_with_rotating_file_handler(
+    "callback", log_level="INFO", filename="data/callback.log", max_bytes=100 * 1024 * 1024, backup_count=5
+)
 
 
 def process_payment_created(app: Flask, data: CallbackModel) -> None:
@@ -113,6 +116,8 @@ def callback():
         request_data = request.get_json()
         request_schema = current_app.config["CALLBACK_SCHEMA"]
 
+        callback_logger.info(f"Callback data: {request_data}")
+
         validate(instance=request_data, schema=request_schema)
 
         logger.debug(f"Received data: {request_data}")
@@ -167,6 +172,7 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     with open(rules_schema_file, "r", encoding="utf-8") as file:
         rules_schema = json.load(file)
 
+    # Load the rules from external files
     rules = {}
     rules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules/")
     for file in os.listdir(rules_dir):

@@ -9,7 +9,17 @@
 
 ### Create bunq config
 
-`./app.py --production --config-file .bunq.conf create-config --api-key <API-KEY>`
+Using Docker:
+
+`docker run --rm -v bunq_data:/app/conf besquared/bunq --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
+
+Using python
+`python ./app.py --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
+
+### Start server
+
+Using Docker compose:
+`docker compose up -d`
 
 ## Development
 

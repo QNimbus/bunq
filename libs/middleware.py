@@ -6,8 +6,9 @@ import ipaddress
 from typing import Callable, Any
 
 # Local application/library imports
-from libs.log import setup_logger
-from flask import Flask, Request, Response
+from flask import Flask, Response
+from werkzeug.wrappers import Request
+from libs.log import setup_logger, setup_logger_with_rotating_file_handler
 from libs.exceptions import InvalidIPAddressError
 
 # Setup logging
@@ -58,14 +59,10 @@ class AllowedIPsMiddleware:  # pylint: disable=too-few-public-methods
                     # If it's not in network notation, try creating an IPv4Address object
                     ip_address = ipaddress.IPv4Address(input_string)
                     # Convert the single IP address to a network with a netmask of /32
-                    ip_network = ipaddress.IPv4Network(
-                        ip_address.exploded + "/32", strict=False
-                    )
+                    ip_network = ipaddress.IPv4Network(ip_address.exploded + "/32", strict=False)
                     self.allowed_ips.append(ip_network)
                 except ipaddress.AddressValueError as exc:
-                    raise InvalidIPAddressError(
-                        f"Invalid IP address: {input_string}"
-                    ) from exc
+                    raise InvalidIPAddressError(f"Invalid IP address: {input_string}") from exc
 
     def __call__(self, environ: dict[str, Any], start_response: Callable) -> Callable:
         """
@@ -99,9 +96,7 @@ class AllowedIPsMiddleware:  # pylint: disable=too-few-public-methods
         try:
             remote_addr = ipaddress.IPv4Address(ip_address_str)
         except ipaddress.AddressValueError as exc:
-            raise InvalidIPAddressError(
-                f"Invalid IP address: {ip_address_str}"
-            ) from exc
+            raise InvalidIPAddressError(f"Invalid IP address: {ip_address_str}") from exc
 
         if not self._is_ip_allowed(remote_addr):
             response = Response(status=403)  # Forbidden access
@@ -134,7 +129,6 @@ class AllowedIPsMiddleware:  # pylint: disable=too-few-public-methods
 
         except ipaddress.AddressValueError as exc:
             raise InvalidIPAddressError(f"Invalid IP address: {ip_address}") from exc
-
 
 class DebugLogMiddleware:  # pylint: disable=too-few-public-methods
     """

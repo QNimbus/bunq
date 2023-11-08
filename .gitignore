@@ -5,6 +5,8 @@
 *.bak
 *.old
 
+data/
+
 docker-compose.yaml
 
 # Exported statements

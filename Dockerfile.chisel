@@ -1,0 +1,22 @@
+# Use an official Python runtime as a parent image
+FROM python:slim
+
+# Set the working directory in the container to /app
+WORKDIR /app
+
+# Install curl
+# Remember to update and clean up the apt cache to keep the image small
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install chisel
+RUN curl https://i.jpillora.com/chisel! | bash
+
+# Environment variables
+ENV CHISEL_SERVER_URL=
+ENV CHISEL_SERVER_AUTH=
+ENV CHISEL_SERVER_FINGERPRINT=
+
+# Run chisel client
+CMD [ "/bin/sh", "-c", "/usr/local/bin/chisel client --fingerprint=${CHISEL_SERVER_FINGERPRINT} --auth=${CHISEL_SERVER_AUTH} ${CHISEL_SERVER_URL} R:5000:bunq:5000" ]
