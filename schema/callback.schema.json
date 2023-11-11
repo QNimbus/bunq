@@ -9,169 +9,13 @@
                     "type": "string"
                 },
                 "category": {
-                    "type": "string"
+                    "$ref": "#/definitions/CategoryType"
                 },
                 "event_type": {
-                    "type": "string"
+                    "$ref": "#/definitions/EventType"
                 },
                 "object": {
-                    "type": "object",
-                    "properties": {
-                        "Payment": {
-                            "type": "object",
-                            "properties": {
-                                "id": {
-                                    "type": "integer"
-                                },
-                                "created": {
-                                    "type": "string",
-                                    "format": "date-time"
-                                },
-                                "updated": {
-                                    "type": "string",
-                                    "format": "date-time"
-                                },
-                                "monetary_account_id": {
-                                    "type": "integer"
-                                },
-                                "amount": {
-                                    "type": "object",
-                                    "properties": {
-                                        "currency": {
-                                            "type": "string"
-                                        },
-                                        "value": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "currency",
-                                        "value"
-                                    ]
-                                },
-                                "description": {
-                                    "type": "string"
-                                },
-                                "type": {
-                                    "type": "string"
-                                },
-                                "merchant_reference": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                },
-                                "alias": {
-                                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
-                                },
-                                "counterparty_alias": {
-                                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
-                                },
-                                "attachment": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                "geolocation": {
-                                    "type": "object",
-                                    "properties": {
-                                        "latitude": {
-                                            "type": "number"
-                                        },
-                                        "longitude": {
-                                            "type": "number"
-                                        },
-                                        "altitude": {
-                                            "type": "number"
-                                        },
-                                        "radius": {
-                                            "type": "number"
-                                        }
-                                    },
-                                    "required": [
-                                        "latitude",
-                                        "longitude",
-                                        "altitude",
-                                        "radius"
-                                    ]
-                                },
-                                "batch_id": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                },
-                                "scheduled_id": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                },
-                                "address_billing": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                },
-                                "address_shipping": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                },
-                                "sub_type": {
-                                    "type": "string"
-                                },
-                                "request_reference_split_the_bill": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                "balance_after_mutation": {
-                                    "type": "object",
-                                    "properties": {
-                                        "currency": {
-                                            "type": "string"
-                                        },
-                                        "value": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "currency",
-                                        "value"
-                                    ]
-                                },
-                                "payment_auto_allocate_instance": {
-                                    "type": [
-                                        "null",
-                                        "string"
-                                    ]
-                                }
-                            },
-                            "required": [
-                                "id",
-                                "created",
-                                "updated",
-                                "monetary_account_id",
-                                "amount",
-                                "description",
-                                "type",
-                                "alias",
-                                "counterparty_alias",
-                                "attachment",
-                                "geolocation",
-                                "sub_type",
-                                "request_reference_split_the_bill",
-                                "balance_after_mutation"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "Payment"
-                    ]
+                    "$ref": "#/definitions/ObjectType"
                 }
             },
             "required": [
@@ -186,14 +30,389 @@
         "NotificationUrl"
     ],
     "definitions": {
+        "ObjectType": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "Payment": {
+                            "$ref": "#/definitions/PaymentType"
+                        }
+                    },
+                    "required": [
+                        "Payment"
+                    ]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "MasterCardAction": {
+                            "$ref": "#/definitions/MasterCardActionType"
+                        }
+                    },
+                    "required": [
+                        "MasterCardAction"
+                    ]
+                }
+            ]
+        },
+        "PaymentType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "created": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "updated": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "monetary_account_id": {
+                    "type": "integer"
+                },
+                "amount": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "merchant_reference": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "counterparty_alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "attachment": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "geolocation": {
+                    "type": [
+                        "object",
+                        "null"
+                    ],
+                    "properties": {
+                        "latitude": {
+                            "type": "number"
+                        },
+                        "longitude": {
+                            "type": "number"
+                        },
+                        "altitude": {
+                            "type": "number"
+                        },
+                        "radius": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "latitude",
+                        "longitude",
+                        "altitude",
+                        "radius"
+                    ]
+                },
+                "batch_id": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "scheduled_id": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "address_billing": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "address_shipping": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "sub_type": {
+                    "type": "string"
+                },
+                "request_reference_split_the_bill": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "balance_after_mutation": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "payment_auto_allocate_instance": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                }
+            },
+            "required": [
+                "id",
+                "created",
+                "updated",
+                "monetary_account_id",
+                "amount",
+                "description",
+                "type",
+                "alias",
+                "counterparty_alias",
+                "attachment",
+                "geolocation",
+                "sub_type",
+                "request_reference_split_the_bill",
+                "balance_after_mutation"
+            ]
+        },
+        "MasterCardActionType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "created": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "updated": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "monetary_account_id": {
+                    "type": "integer"
+                },
+                "card_id": {
+                    "type": "integer"
+                },
+                "card_authorisation_id_response": {
+                    "type": "string"
+                },
+                "amount_local": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "amount_converted": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "amount_billing": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "amount_original_local": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "amount_original_billing": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "amount_fee": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "decision": {
+                    "$ref": "#/definitions/DecisionType"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "decision_description": {
+                    "type": "string"
+                },
+                "decision_description_translated": {
+                    "type": "string"
+                },
+                "decision_together_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "authorisation_status": {
+                    "type": "string"
+                },
+                "authorisation_type": {
+                    "type": "string"
+                },
+                "settlement_status": {
+                    "type": "string"
+                },
+                "clearing_status": {
+                    "type": "string"
+                },
+                "maturity_date": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "counterparty_alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "label_card": {
+                    "$ref": "#/definitions/labelCard"
+                },
+                "merchant_id": {
+                    "type": "string"
+                },
+                "token_status": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "reservation_expiry_time": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "clearing_expiry_time": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "pan_entry_mode_user": {
+                    "type": "string"
+                },
+                "secure_code_id": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "wallet_provider_id": {
+                    "type": "string"
+                },
+                "request_reference_split_the_bill": {
+                    "type": "array"
+                },
+                "applied_limit": {
+                    "type": "string"
+                },
+                "pos_card_presence": {
+                    "type": "string"
+                },
+                "pos_card_holder_presence": {
+                    "type": "string"
+                },
+                "eligible_whitelist_id": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "cashback_payout_item": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "mastercard_action_report": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "blacklist": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "additional_authentication_status": {
+                    "type": "string"
+                },
+                "pin_status": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "created",
+                "updated",
+                "monetary_account_id"
+            ]
+        },
+        "AmountType": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "currency",
+                "value"
+            ]
+        },
+        "DateTimeType": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{1,6}$"
+        },
+        "DecisionType": {
+            "type": "string",
+            "enum": [
+                "ALLOWED"
+            ]
+        },
+        "CategoryType": {
+            "type": "string",
+            "enum": [
+                "MUTATION",
+                "REQUEST",
+                "SCHEDULE_RESULT",
+                "SCHEDULE_STATUS",
+                "PAYMENT",
+                "DRAFT_PAYMENT",
+                "BILLING",
+                "IDEAL",
+                "SOFORT",
+                "CARD_TRANSACTION_SUCCESSFUL",
+                "CARD_TRANSACTION_FAILED"
+            ]
+        },
+        "EventType": {
+            "type": "string",
+            "enum": [
+                "MUTATION_CREATED",
+                "MUTATION_RECEIVED",
+                "PAYMENT_CREATED",
+                "PAYMENT_RECEIVED",
+                "CARD_PAYMENT_ALLOWED"
+            ]
+        },
         "aliasOrCounterpartyAlias": {
             "type": "object",
             "properties": {
                 "iban": {
-                    "type": "string"
+                    "type": [
+                        "null",
+                        "string"
+                    ]
                 },
                 "is_light": {
-                    "type": "boolean"
+                    "type": [
+                        "null",
+                        "boolean"
+                    ]
                 },
                 "display_name": {
                     "type": "string"
@@ -382,6 +601,42 @@
                 "avatar",
                 "public_nick_name",
                 "type"
+            ]
+        },
+        "labelCard": {
+            "type": "object",
+            "properties": {
+                "uuid": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "type": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "second_line": {
+                    "type": "string"
+                },
+                "expiry_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "label_user": {
+                    "$ref": "#/definitions/labelUser"
+                }
+            },
+            "required": [
+                "uuid",
+                "type",
+                "label_user",
+                "expiry_date",
+                "status"
             ]
         }
     }

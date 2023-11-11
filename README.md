@@ -2,6 +2,7 @@
 
 - [Getting started](#getting-started)
   - [Create bunq config](#create-bunq-config)
+  - [Start server](#start-server)
 - [Development](#development)
   - [Rules model](#rules-model)
 
@@ -11,7 +12,7 @@
 
 Using Docker:
 
-`docker run --rm -v bunq_data:/app/conf besquared/bunq --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
+`docker run --rm -v bunq_data:/app/conf besquared/bunq python app.py --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
 
 Using python
 `python ./app.py --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`

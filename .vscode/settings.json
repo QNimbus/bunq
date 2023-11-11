@@ -6,6 +6,12 @@
                 "*.rules.json"
             ],
             "url": "/schema/rules.schema.json"
+        },
+        {
+            "fileMatch": [
+                "*.cb.json"
+            ],
+            "url": "/schema/callback.schema.json"
         }
     ],
 }

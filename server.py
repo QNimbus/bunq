@@ -24,7 +24,11 @@ from schema.callback_model import Model as CallbackModel
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 callback_logger = setup_logger_with_rotating_file_handler(
-    "callback", log_level="INFO", filename="data/callback.log", max_bytes=100 * 1024 * 1024, backup_count=5
+    "callback",
+    log_level="INFO",
+    filename="data/callback.log",
+    max_bytes=100 * 1024 * 1024,
+    backup_count=5,
 )
 
 
@@ -41,7 +45,9 @@ def process_payment_created(app: Flask, data: CallbackModel) -> None:
     """
     payment = data.NotificationUrl.object.Payment
 
-    logger.debug(f"PAYMENT_CREATED: {payment.alias.display_name} - {payment.description} ({payment.id})")
+    logger.debug(
+        f"PAYMENT_CREATED: {payment.alias.display_name} - {payment.description} ({payment.id})"
+    )
 
     rule_collections: dict[str, any] = app.config["RULES"]
 
@@ -51,10 +57,14 @@ def process_payment_created(app: Flask, data: CallbackModel) -> None:
         success, _matching, _non_matching = process_rules(data=payment, rules=rules)
 
         if success:
-            logger.info(f"PAYMENT_CREATED: {payment.alias.display_name} - {payment.description} ({payment.id}) matches rules in {rules_file}")
+            logger.info(
+                f"PAYMENT_CREATED: {payment.alias.display_name} - {payment.description} ({payment.id}) matches rules in {rules_file}"
+            )
 
 
-def process_payment_received(app: Flask, data: CallbackModel) -> None:  # pylint: disable=unused-argument
+def process_payment_received(
+    app: Flask, data: CallbackModel
+) -> None:  # pylint: disable=unused-argument
     """
     Process a payment received notification and log the payment details.
 
@@ -66,10 +76,14 @@ def process_payment_received(app: Flask, data: CallbackModel) -> None:  # pylint
         None
     """
     payment = data.NotificationUrl.object.Payment
-    logger.info(f"PAYMENT_RECEIVED: {payment.alias.display_name} - {payment.description} ({payment.id})")
+    logger.info(
+        f"PAYMENT_RECEIVED: {payment.alias.display_name} - {payment.description} ({payment.id})"
+    )
 
 
-def process_unregistered_event(app: Flask, data: any) -> None:  # pylint: disable=unused-argument
+def process_unregistered_event(
+    app: Flask, data: any
+) -> None:  # pylint: disable=unused-argument
     """
     Process an unregistered event type.
 
@@ -116,9 +130,9 @@ def callback():
         request_data = request.get_json()
         request_schema = current_app.config["CALLBACK_SCHEMA"]
 
-        callback_logger.info(f"Callback data: {request_data}")
-
         validate(instance=request_data, schema=request_schema)
+
+        callback_logger.info(f"Callback data: {request_data}")
 
         logger.debug(f"Received data: {request_data}")
 
@@ -148,7 +162,10 @@ def callback():
             "schema_path": list(exc.schema_path),
         }
 
-        logger.debug(f"JSON schema validation failed:\n\n{json.dumps(error_details, indent=2)}")
+        logger.debug(
+            f"JSON schema validation failed:\n\n{json.dumps(error_details, indent=2)}"
+        )
+        callback_logger.info(f"Validation failed: {request_data}")
 
         return jsonify({"message": "Invalid request"}), 400
 
@@ -168,7 +185,9 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     logger.info(f"Allowed IPs: {allowed_ips}")
 
     # Load the rules schema from an external file
-    rules_schema_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema/rules.schema.json")
+    rules_schema_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "schema/rules.schema.json"
+    )
     with open(rules_schema_file, "r", encoding="utf-8") as file:
         rules_schema = json.load(file)
 
@@ -182,7 +201,9 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
             logger.info(f"Loaded rules from {rules_file}")
 
     # Load the callback schema from an external file
-    callback_schema_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema/callback.schema.json")
+    callback_schema_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "schema/callback.schema.json"
+    )
     with open(callback_schema_file, "r", encoding="utf-8") as file:
         callback_schema = json.load(file)
 

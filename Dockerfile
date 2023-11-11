@@ -25,10 +25,10 @@ VOLUME /app/conf /app/data
 ENV PYTHONWARNINGS=ignore
 ENV LOGL_LEVEL=INFO
 ENV PRODUCTION=True
-ENV ALLOWED_IPS="0.0.0.0/0"
 ENV GUNICORN_WORKERS=4
 ENV GUNICORN_TIMEOUT=5
 ENV GUNICORN_PORT=5000
+ENV ALLOWED_IPS=
 
 # Run bunq callback server
 CMD [ "/bin/sh", "-c", "gunicorn --workers=${GUNICORN_WORKERS} --timeout=${GUNICORN_TIMEOUT} --bind=0.0.0.0:${GUNICORN_PORT} \"server:create_server()\"" ]
