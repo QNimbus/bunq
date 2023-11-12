@@ -18,7 +18,7 @@ from libs.log import setup_logger, setup_logger_with_rotating_file_handler
 from libs.decorator import route, routes
 from libs.rules import process_rules, load_rules
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
-from schema.callback_model import Model as CallbackModel
+from schema.callback_model import CallbackModel
 
 
 # Setup logging

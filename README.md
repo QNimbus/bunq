@@ -26,6 +26,11 @@ Using Docker compose:
 
 ### Rules model
 
-To generate the model from the schema, run the following command:
+To generate the rules collection model from the schema, run the following command:
 
 `datamodel-codegen --input-file-type jsonschema --input schema/rules.schema.json --output-model-type pydantic_v2.BaseModel --output schema/rules_model.py --class-name RuleCollection --use-title-as-name --disable-appending-item-suffix`
+
+To generate the callback model from the schema, run the following command:
+
+`datamodel-codegen --input-file-type jsonschema --input schema/callback.schema.json --output-model-type pydantic_v2.BaseModel --output schema/callback_model_new.py --class-name CallbackModel --use-title-as
+-name --disable-appending-item-suffix`
