@@ -17,6 +17,8 @@ RUN curl https://i.jpillora.com/chisel! | bash
 ENV CHISEL_SERVER_URL=
 ENV CHISEL_SERVER_AUTH=
 ENV CHISEL_SERVER_FINGERPRINT=
+ENV CHISEL_PROXY_PORT=8080
+ENV CHISEL_PROXY_CONTAINER=chisel-proxy
 
 # Run chisel client
-CMD [ "/bin/sh", "-c", "/usr/local/bin/chisel client --fingerprint=${CHISEL_SERVER_FINGERPRINT} --auth=${CHISEL_SERVER_AUTH} ${CHISEL_SERVER_URL} R:5000:bunq:5000" ]
+CMD [ "/bin/sh", "-c", "/usr/local/bin/chisel client --fingerprint=${CHISEL_SERVER_FINGERPRINT} --auth=${CHISEL_SERVER_AUTH} ${CHISEL_SERVER_URL} R:${CHISEL_PROXY_PORT}:${CHISEL_PROXY_CONTAINER}:${CHISEL_PROXY_PORT}" ]

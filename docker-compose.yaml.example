@@ -1,7 +1,7 @@
 services:
   chisel:
-    container_name: chisel
-    image: besquared/chisel
+    container_name: bunq-chisel
+    image: besquared/chisel-bunq
     build:
       dockerfile: Dockerfile.chisel
     logging:
@@ -14,7 +14,15 @@ services:
     environment:
       CHISEL_SERVER_URL: chisel-server:8080
       CHISEL_SERVER_AUTH: username:password
-      CHISEL_SERVER_FINGERPRINT: sg2VOIq1TLXdXB1P05bAHFy7pv5njsgWX3fF0eOu22I= 
+      CHISEL_SERVER_FINGERPRINT: sg2VOIq1TLXdXB1P05bAHFy7pv5njsgWX3fF0eOu22I=
+      CHISEL_PROXY_PORT: 5000
+      CHISEL_PROXY_CONTAINER: bunq
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      test: "timeout 5 /bin/bash -c \"cat /dev/null > /dev/tcp/<TARGET-IP>/443 && cat /dev/null > /dev/tcp/<TARGET-IP>/2334\""
 
   bunq:
     container_name: bunq
@@ -30,7 +38,7 @@ services:
     restart: unless-stopped
     environment:
       ALLOWED_IPS: "0.0.0.0/0"
-      GUNICORN_WORKERS: 4
+      GUNICORN_WORKERS: 1
       GUNICORN_TIMEOUT: 5
       GUNICORN_PORT: 5000
     volumes:
@@ -38,6 +46,15 @@ services:
         source: bunq_data          
         target: /app/conf
         read_only: false
+    healthcheck:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+      test: "timeout 5 /bin/bash -c \"cat /dev/null > /dev/tcp/127.0.01/5000\""
+    depends_on:
+      chisel:
+        condition: service_healthy
 
 volumes:
   bunq_data:

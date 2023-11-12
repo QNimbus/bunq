@@ -13,7 +13,8 @@
 				"ms-python.black-formatter",
 				"philnash.ngrok-for-vscode",
 				"vsls-contrib.gistfs",
-				"ms-python.pylint"
+				"ms-python.pylint",
+				"GitHub.copilot"
 			],
 			"settings": {
 				"dev.containers.copyGitConfig": true,
@@ -49,6 +50,7 @@
 	},
 	"postCreateCommand": {
 		"ownership": "sudo chown -R vscode:vscode ${containerWorkspaceFolder}",
+		"executable": "sudo chmod +x ${containerWorkspaceFolder}/scripts/*.sh",
 		"pip": "pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt"
 	}
 	// Features to add to the dev container. More info: https://containers.dev/features.

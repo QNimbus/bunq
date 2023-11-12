@@ -14,7 +14,7 @@ from jsonschema.exceptions import ValidationError
 # Local application/library imports
 from libs.log import setup_logger
 from libs.exceptions import RuleProcessingError
-from schema.callback_model import Payment
+from schema.callback_model import PaymentType
 from schema.rules_model import RuleType, Condition, Rule, Rules, RuleGroup
 
 # Setup logging
@@ -63,12 +63,14 @@ def load_rules(schema: any, rules_path: str) -> list[Union[Rule, RuleGroup]]:
         raise RuleProcessingError(f"Error loading rules: {error}") from error
 
 
-def check_rule(data: Payment, rule: Rule) -> bool:  # pylint: disable=too-many-locals
+def check_rule(
+    data: PaymentType, rule: Rule
+) -> bool:  # pylint: disable=too-many-locals
     """
     Checks if a given rule matches the given payment data.
 
     Args:
-        data (Payment): Payment data.
+        data (PaymentType): Payment data.
         rule (Rule): Rule definition.
 
     Returns:
@@ -138,7 +140,7 @@ def check_rule(data: Payment, rule: Rule) -> bool:  # pylint: disable=too-many-l
 
 
 def process_rules(
-    data: Payment, rules: list[Rule | RuleGroup]
+    data: PaymentType, rules: list[Rule | RuleGroup]
 ) -> (bool, list[str], list[str]):
     """
     Recursively processes a list of rules and returns a tuple containing a boolean indicating whether any of the rules matched
@@ -198,7 +200,7 @@ def get_nested_property(data: dict, property_name: str) -> any:
     Retrieves the value of a nested property within a dictionary using dot notation.
 
     Args:
-        data (Payment): The dictionary from which to retrieve the value.
+        data (PaymentType): The dictionary from which to retrieve the value.
         property_name (str): The nested property name in dot notation (e.g., 'a.b.c').
 
     Returns:

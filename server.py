@@ -130,11 +130,14 @@ def callback():
         request_data = request.get_json()
         request_schema = current_app.config["CALLBACK_SCHEMA"]
 
+        # Log the json data
+        callback_logger.info(json.dumps(request_data))
+
+        # Validate the request data against the schema
         validate(instance=request_data, schema=request_schema)
 
-        callback_logger.info(f"Callback data: {request_data}")
-
-        logger.debug(f"Received data: {request_data}")
+        # Log callback data
+        logger.info(f"Callback data: {json.dumps(request_data)}")
 
         callback_data = TypeAdapter(CallbackModel).validate_python(request_data)
         event_type = callback_data.NotificationUrl.event_type
@@ -162,10 +165,13 @@ def callback():
             "schema_path": list(exc.schema_path),
         }
 
+        # Log failed schema validation
+        logger.info(f"Callback data failed validation: {json.dumps(request_data)}")
+
+        # Debug log detailed reason for schema validation
         logger.debug(
             f"JSON schema validation failed:\n\n{json.dumps(error_details, indent=2)}"
         )
-        callback_logger.info(f"Validation failed: {request_data}")
 
         return jsonify({"message": "Invalid request"}), 400
 
@@ -180,7 +186,10 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     logger.info("Starting server")
 
     if allowed_ips is None:
-        allowed_ips = os.environ.get("ALLOWED_IPS", None).split(",")
+        if os.environ.get("ALLOWED_IPS", None) is None:
+            allowed_ips = []
+        else:
+            allowed_ips = os.environ.get("ALLOWED_IPS").split(",")
 
     logger.info(f"Allowed IPs: {allowed_ips}")
 
