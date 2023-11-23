@@ -11,16 +11,24 @@
                             "type": "string",
                             "title": "Action Type",
                             "enum": [
-                                "CREATE_REQUEST"
+                                "CREATE_REQUEST_FROM_PAYMENT"
                             ]
                         },
                         "data": {
-                            "type": "string"
+                            "$ref": "#/definitions/CreateRequestActionData"
+                        },
+                        "events": {
+                            "type": "array",
+                            "title": "Event types",
+                            "items": {
+                                "$ref": "#/definitions/EventType"
+                            }
                         }
                     },
                     "required": [
                         "type",
-                        "data"
+                        "data",
+                        "events"
                     ],
                     "additionalProperties": false
                 }
@@ -107,6 +115,67 @@
                 "rules"
             ],
             "additionalProperties": true
+        },
+        "CreateRequestActionData": {
+            "type": "object",
+            "properties": {
+                "amount_value_property": {
+                    "type": "string",
+                    "default": "amount.value"
+                },
+                "amount_value_absolute": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "append_original_description": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "request_from": {
+                    "$ref": "#/definitions/BankAccount"
+                },
+                "description": {
+                    "type": "string",
+                    "default": ""
+                }
+            },
+            "required": [
+                "request_from"
+            ],
+            "additionalProperties": false
+        },
+        "EventType": {
+            "type": "string",
+            "enum": [
+                "MUTATION_CREATED",
+                "MUTATION_RECEIVED",
+                "PAYMENT_CREATED",
+                "PAYMENT_RECEIVED",
+                "CARD_PAYMENT_ALLOWED",
+                "CARD_TRANSACTION_NOT_ALLOWED",
+                "REQUEST_INQUIRY_CREATED",
+                "REQUEST_INQUIRY_ACCEPTED",
+                "REQUEST_INQUIRY_REJECTED",
+                "REQUEST_RESPONSE_CREATED",
+                "REQUEST_RESPONSE_ACCEPTED",
+                "REQUEST_RESPONSE_REJECTED"
+            ]
+        },
+        "BankAccount": {
+            "type": "object",
+            "properties": {
+                "iban": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "iban",
+                "name"
+            ],
+            "additionalProperties": false
         }
     },
     "type": "array",

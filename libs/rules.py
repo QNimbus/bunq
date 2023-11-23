@@ -14,8 +14,14 @@ from jsonschema.exceptions import ValidationError
 # Local application/library imports
 from libs.log import setup_logger
 from libs.exceptions import RuleProcessingError
-from schema.callback_model import PaymentType
-from schema.rules_model import RuleType, Condition, Rule, Rules, RuleGroup
+from schema.rules_model import Action, RuleType, Condition, Rule, Rules, RuleRoot, RuleGroup, RuleGroupRoot
+from schema.callback_model import (
+    EventType,
+    PaymentType,
+    RequestInquiryType,
+    RequestResponseType,
+    MasterCardActionType,
+)
 
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
@@ -54,9 +60,7 @@ def load_rules(schema: any, rules_path: str) -> list[Union[Rule, RuleGroup]]:
             "schema_path": list(error.schema_path),
         }
 
-        logger.debug(
-            f"Error validating rules:':\n\n{json.dumps(error_details, indent=2)}"
-        )
+        logger.debug(f"Error validating rules:':\n\n{json.dumps(error_details, indent=2)}")
 
         raise RuleProcessingError(f"Error validating rules: {error}") from error
     except Exception as error:
@@ -64,7 +68,8 @@ def load_rules(schema: any, rules_path: str) -> list[Union[Rule, RuleGroup]]:
 
 
 def check_rule(
-    data: PaymentType, rule: Rule
+    data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType,
+    rule: Rule,
 ) -> bool:  # pylint: disable=too-many-locals
     """
     Checks if a given rule matches the given payment data.
@@ -108,9 +113,7 @@ def check_rule(
         def does_not_contain():
             if property_value:
                 low_prop_val = property_value.strip().lower()
-                return all(
-                    val.strip().lower() not in low_prop_val for val in rule_value
-                )
+                return all(val.strip().lower() not in low_prop_val for val in rule_value)
             return True
 
         def equals():
@@ -140,8 +143,10 @@ def check_rule(
 
 
 def process_rules(
-    data: PaymentType, rules: list[Rule | RuleGroup]
-) -> (bool, list[str], list[str]):
+    event_type: EventType,
+    data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType,
+    rules: Rules,
+) -> (bool, Action, str, str):
     """
     Recursively processes a list of rules and returns a tuple containing a boolean indicating whether any of the rules matched
     and a list of all the matched rules.
@@ -153,17 +158,18 @@ def process_rules(
     Returns:
         tuple: A tuple containing a boolean indicating whether any of the rules matched, a list of all the matched rules, and a list of all the non-matched rules.
     """
-    matching_rules: list[tuple[str, str]] = []
-    non_matching_rules: list[tuple[str, str]] = []
+    result = False
+    action: Action = None
+    rule_name: str = None
+    rule_description: str = None
+    # matching_rules: list[tuple[str, str]] = []
+    # non_matching_rules: list[tuple[str, str]] = []
 
     def process_and_capture(rule_or_rulegroup: Rule | RuleGroup) -> bool:
         if isinstance(rule_or_rulegroup, Rule):
             rule = rule_or_rulegroup
             result = check_rule(data, rule)
-            if result:
-                matching_rules.append(("Rule", rule.name))
-            else:
-                non_matching_rules.append(("Rule", rule.name))
+
             return result
 
         if isinstance(rule_or_rulegroup, RuleGroup):
@@ -178,21 +184,25 @@ def process_rules(
             else:
                 raise ValueError(f"Unknown condition: {rules.condition}")
 
-            if result:
-                if rules.name:
-                    matching_rules.append(("RuleGroup", rules.name))
-            else:
-                if rules.name:
-                    non_matching_rules.append(("RuleGroup", rules.name))
-
             return result
 
         raise ValueError(f"Unknown rule type: {rule_or_rulegroup}")
 
     for rule in rules:
-        result = process_and_capture(rule)
+        rule: RuleRoot | RuleGroupRoot
 
-    return result, matching_rules, non_matching_rules
+        # Get 'action' from rules
+        action = rule.action
+
+        # FIXME: Somehow 'if event_type in rule.action.events' doesn't work. This is a workaround
+        if any(event.value == event_type.value for event in action.events):
+            result = process_and_capture(rule)
+            if result:
+                rule_name = rule.name
+                rule_description = rule.description
+                break
+
+    return result, action, rule_name, rule_description
 
 
 def get_nested_property(data: dict, property_name: str) -> any:
@@ -216,6 +226,4 @@ def get_nested_property(data: dict, property_name: str) -> any:
                 return None
         return data
     except Exception as error:
-        raise RuleProcessingError(
-            f"Error accessing property '{property_name}': {error}"
-        ) from error
+        raise RuleProcessingError(f"Error accessing property '{property_name}': {error}") from error

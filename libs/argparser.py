@@ -4,13 +4,13 @@
 import os
 import argparse
 import datetime
-from enum import Enum
 
 # Third-party imports
 # ...
 
 # Local application/library imports
 from libs.log import setup_logger
+from libs.action import Action
 
 DEFAULT_BUNQ_CONFIGURATION_FILE_NAME = ".bunq.conf"
 
@@ -32,21 +32,14 @@ def parse_date(date_str):
         argparse.ArgumentTypeError: If the date string is not in the correct format.
     """
     try:
-        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")  # Adjust the date format as needed
+        date_obj = datetime.datetime.strptime(
+            date_str, "%Y-%m-%d"
+        )  # Adjust the date format as needed
         return date_obj
     except ValueError as exc:
-        raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Use YYYY-MM-DD format.") from exc
-
-
-class Action(Enum):
-    """
-    An enumeration of the available actions that can be performed by the application.
-    """
-
-    EXPORT = "export"
-    CREATE_CONFIG = "create-config"
-    CREATE_REQUEST = "create-request"
-    REMOVE_ALL_STATEMENTS = "remove-all-statements"
+        raise argparse.ArgumentTypeError(
+            f"Invalid date format: {date_str}. Use YYYY-MM-DD format."
+        ) from exc
 
 
 class CLIArgs:
@@ -79,15 +72,25 @@ class CLIArgs:
         )
 
         # Add subparsers for each action.
-        self.subparsers = self.parser.add_subparsers(dest="action", required=True, help="Action to perform.")
+        self.subparsers = self.parser.add_subparsers(
+            dest="action", required=True, help="Action to perform."
+        )
 
-        self.action_create_config_parser = self.subparsers.add_parser(Action.CREATE_CONFIG.value, help="Create a configuration file.")
+        self.action_create_config_parser = self.subparsers.add_parser(
+            Action.CREATE_CONFIG.value, help="Create a configuration file."
+        )
 
-        self.action_export_parser = self.subparsers.add_parser(Action.EXPORT.value, help="Export data.")
+        self.action_export_parser = self.subparsers.add_parser(
+            Action.EXPORT.value, help="Export data."
+        )
 
-        self.action_create_request_parser = self.subparsers.add_parser(Action.CREATE_REQUEST.value, help="Create a request for payment.")
+        self.action_create_request_parser = self.subparsers.add_parser(
+            Action.CREATE_REQUEST.value, help="Create a request for payment."
+        )
 
-        self.action_remove_all_statements_parser = self.subparsers.add_parser(Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements.")
+        self.action_remove_all_statements_parser = self.subparsers.add_parser(
+            Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements."
+        )
 
         self.action_create_config_parser.add_argument(
             CLIArgs._ACTION_CREATE_CONFIG_API_KEY,

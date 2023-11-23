@@ -19,7 +19,7 @@ RUN pip install --upgrade pip
 # Make scripts executable
 RUN chmod +x /app/scripts/start_chisel.sh
 
-VOLUME /app/conf /app/data
+VOLUME /app/conf /app/rules /app/logs
 
 # Environment variables
 ENV PYTHONWARNINGS=ignore

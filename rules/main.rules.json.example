@@ -1,53 +1,72 @@
 [
     {
-        "rule_name": "GroceryStore",
-        "rule_description": "Payment is from a grocery store",
-        "rule_action": "make_payment_request",
+        "name": "Boodschappen",
+        "description": "Verkeerde rekening",
         "condition": "ALL",
+        "action": {
+            "events": [
+                "PAYMENT_CREATED",
+                "MUTATION_CREATED"
+            ],
+            "type": "CREATE_REQUEST_FROM_PAYMENT",
+            "data": {
+                "request_from": {
+                    "name": "Boodschappen",
+                    "iban": "NL12ABNA000123456"
+                },
+                "description": "Correctie: Boodschappen",
+                "append_original_description": true
+            }
+        },
         "rules": [
             {
-                "rule_type": "EQUALS",
-                "rule_value": "EUR",
+                "type": "EQUALS",
+                "value": "EUR",
                 "property": "amount.currency",
-                "rule_description": "Payment currency must be EUR"
+                "description": "Payment currency must be EUR"
             },
             {
-                "rule_type": "IS_NEGATIVE",
+                "type": "IS_NEGATIVE",
                 "property": "amount.value",
-                "rule_description": "Payment amount must be negative"
+                "description": "Payment amount must be negative"
             },
             {
-                "rule_type": "DOES_NOT_CONTAIN",
-                "rule_value": [
-                    "NL01ABNA000123456"
+                "type": "DOES_NOT_CONTAIN",
+                "value": [
+                    "NL12ABNA000123456"
                 ],
                 "property": "alias.iban",
-                "rule_description": "Payment must not be from the 'Boodschappen' account"
+                "description": "Payment must not be from the 'Boodschappen' account"
             },
             {
                 "condition": "ANY",
                 "rules": [
                     {
-                        "rule_type": "CONTAINS",
-                        "rule_value": [
+                        "type": "CONTAINS",
+                        "value": [
                             "Albert Heijn",
                             "Lidl",
                             "Jumbo",
                             "Bakkerij",
                             "Kruidvat",
                             "Kaashandel",
-                            "Thuisbezorgd.nl"
+                            "Thuisbezorgd.nl",
+                            "Coop",
+                            "Aldi",
+                            "Sligro",
+                            "Spar",
+                            "Plus"
                         ],
                         "property": "counterparty_alias.display_name",
-                        "rule_description": "Payment must be from a grocery store"
+                        "description": "Payment must be from a grocery store"
                     },
                     {
-                        "rule_type": "CONTAINS",
-                        "rule_value": [
-                            "test"
+                        "type": "CONTAINS",
+                        "value": [
+                            "bunq-test"
                         ],
                         "property": "description",
-                        "rule_description": "Description contains the word 'test'"
+                        "description": "Description contains the word 'bunq-test'"
                     }
                 ]
             }

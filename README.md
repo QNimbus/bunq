@@ -12,10 +12,20 @@
 
 Using Docker:
 
-`docker run --rm -v bunq_data:/app/conf besquared/bunq python app.py --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
+`docker run --rm -v conf:/app/conf besquared/bunq:latest python app.py --production --config-file conf/.bunq-<CONFIG-NAME>.conf create-config --api-key <API-KEY>`
 
-Using python
-`python ./app.py --production --config-file conf/.bunq.conf create-config --api-key <API-KEY>`
+or (get the file in the current workdir):
+
+`docker run --rm -v ${PWD}:/app/conf besquared/bunq:latest python app.py --production --config-file conf/.bunq-<CONFIG-NAME>.conf create-config --api-key <API-KEY>`
+
+Using python (inside container)
+`python app.py --production --config-file conf/.bunq-<CONFIG-NAME>.conf create-config --api-key <API-KEY>`
+
+Using docker compose (when stack _is not_ running)
+`docker compose -f docker-compose.yaml run --no-deps --rm bunq python app.py --production --config-file conf/.bunq-<CONFIG-NAME>.conf create-config --api-key <API-KEY>`
+
+Using docker compose (when stack _is_ running)
+`docker compose -f docker-compose.yaml exec bunq python app.py --production --config-file conf/.bunq-<CONFIG-NAME>.conf create-config --api-key <API-KEY>`
 
 ### Start server
 

@@ -5,7 +5,8 @@
 *.bak
 *.old
 
-data/
+conf/*
+data/*
 
 docker-compose.yaml
 

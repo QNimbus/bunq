@@ -122,17 +122,22 @@ class BunqLib:
             config_file (str, optional): The path to the configuration file to use. Defaults to None.
         """
         self.user = None
-        self.config_file = (
-            config_file if config_file else self.determine_bunq_conf_filename()
-        )
-        self.env = (
-            ApiEnvironmentType.PRODUCTION
-            if production_mode
-            else ApiEnvironmentType.SANDBOX
-        )
+        self.config_file = config_file if config_file else self.determine_bunq_conf_filename()
+        self.env = ApiEnvironmentType.PRODUCTION if production_mode else ApiEnvironmentType.SANDBOX
 
+        self.api_context = None
         self.setup_context()
         self.setup_current_user()
+
+    def __eq__(self, other):
+        if not isinstance(other, BunqLib):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.config_file == other.config_file
+
+    def __hash__(self):
+        return hash(self.config_file)
 
     def setup_context(self) -> None:
         """
@@ -140,14 +145,18 @@ class BunqLib:
 
         :return: None
         """
+        if self.api_context and self.api_context == BunqContext.api_context():
+            return self.api_context
+
         if not os.path.isfile(self.config_file):
             raise BunqException(BunqLib._ERROR_COULD_NOT_DETERMINE_CONF)
 
         api_context = ApiContext.restore(self.config_file)
         api_context.ensure_session_active()
         api_context.save(self.config_file)
-
         BunqContext.load_api_context(api_context)
+
+        self.api_context = BunqContext.api_context()
 
     def setup_current_user(self) -> None:
         """
@@ -189,12 +198,12 @@ class BunqLib:
         """
         return self.user
 
-    def get_all_accounts_bank(
-        self, only_active: bool = False
-    ) -> List[MonetaryAccountBank]:
+    def get_all_accounts_bank(self, only_active: bool = False) -> List[MonetaryAccountBank]:
         """
         Returns a list of all accounts for the current user.
         """
+        self.setup_context()
+
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
@@ -211,12 +220,12 @@ class BunqLib:
 
         return accounts
 
-    def get_all_accounts_joint(
-        self, only_active: bool = False
-    ) -> List[MonetaryAccountJoint]:
+    def get_all_accounts_joint(self, only_active: bool = False) -> List[MonetaryAccountJoint]:
         """
         Returns a list of all accounts for the current user.
         """
+        self.setup_context()
+
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
@@ -233,12 +242,12 @@ class BunqLib:
 
         return accounts
 
-    def get_all_accounts_savings(
-        self, only_active: bool = False
-    ) -> List[MonetaryAccountSavings]:
+    def get_all_accounts_savings(self, only_active: bool = False) -> List[MonetaryAccountSavings]:
         """
         Returns a list of all accounts for the current user.
         """
+        self.setup_context()
+
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
@@ -257,13 +266,7 @@ class BunqLib:
 
     def get_all_accounts(
         self, only_active: bool = False
-    ) -> List[
-        Union[
-            MonetaryAccountBank,
-            MonetaryAccountJoint,
-            MonetaryAccountSavings,
-        ]
-    ]:
+    ) -> List[Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings,]]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -296,6 +299,8 @@ class BunqLib:
         Returns:
             int: The value returned after creating the statement.
         """
+        self.setup_context()
+
         # Create a statement
         return ExportStatement.create(
             monetary_account_id=monetary_account_id,
@@ -315,22 +320,20 @@ class BunqLib:
         """
         Creates a request inquiry based on the provided parameters.
         """
+        self.setup_context()
+
         if options is None:
             options = RequestInquiryOptions(description="AUTO-GENERATED REQUEST")
 
         return RequestInquiry.create(
             amount_inquired=Amount(value=amount, currency=options.currency),
-            counterparty_alias=Pointer(
-                type_="IBAN", value=counterparty.iban, name=counterparty.name
-            ),
+            counterparty_alias=Pointer(type_="IBAN", value=counterparty.iban, name=counterparty.name),
             monetary_account_id=monetary_account_id,
             description=options.description,
             allow_bunqme=False,
         ).value
 
-    def get_statement(
-        self, statement_id: int, monetary_account_id: int
-    ) -> ExportStatement:
+    def get_statement(self, statement_id: int, monetary_account_id: int) -> ExportStatement:
         """
         Retrieve a statement from the Bunq API.
 
@@ -341,6 +344,8 @@ class BunqLib:
         Returns:
             ExportStatement: The statement object retrieved from the Bunq API.
         """
+        self.setup_context()
+
         # Get a statement
         try:
             return ExportStatement.get(statement_id, monetary_account_id).value
@@ -367,17 +372,14 @@ class BunqLib:
         >>> statement = Statement()
         >>> content = statement.export_statement(1, 12345)
         """
+        self.setup_context()
 
         try:
             statement = self.get_statement(statement_id, monetary_account_id)
             if statement is None:
-                raise StatementNotFoundError(
-                    f"Statement with ID {statement_id} not found"
-                )
+                raise StatementNotFoundError(f"Statement with ID {statement_id} not found")
 
-            content = ExportStatementContent.list(
-                statement.id_, monetary_account_id
-            ).value
+            content = ExportStatementContent.list(statement.id_, monetary_account_id).value
             return content
 
         except Exception as exc:
@@ -394,12 +396,12 @@ class BunqLib:
         Returns:
             None
         """
+        self.setup_context()
+
         try:
             ExportStatement.delete(statement_id, monetary_account_id)
         except Exception as exc:
-            raise StatementDeletionError(
-                f"An error occurred while deleting statement {statement_id} for account id {monetary_account_id}: {exc}"
-            ) from exc
+            raise StatementDeletionError(f"An error occurred while deleting statement {statement_id} for account id {monetary_account_id}: {exc}") from exc
 
     def get_all_statements(
         self,
@@ -414,14 +416,12 @@ class BunqLib:
         Returns:
             Dict[str, List[ExportStatement]]: A dictionary containing the statements for the given account, with the account ID as the key.
         """
+        self.setup_context()
+
         try:
-            statements: List[ExportStatement] = list(
-                ExportStatement.list(account.id_).value
-            )
+            statements: List[ExportStatement] = list(ExportStatement.list(account.id_).value)
         except Exception as exc:
-            raise StatementsRetrievalError(
-                f"An error occurred while retrieving statements for account '{account.description}' ({account.id_}): {exc}"
-            ) from exc
+            raise StatementsRetrievalError(f"An error occurred while retrieving statements for account '{account.description}' ({account.id_}): {exc}") from exc
 
         return statements
 

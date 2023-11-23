@@ -11,7 +11,7 @@ fi
     --fingerprint=${CHISEL_SERVER_FINGERPRINT} \
     --auth=${CHISEL_SERVER_AUTH} \
     ${CHISEL_SERVER_URL} \
-    R:5000:localhost:5000 &
+    R:8888:localhost:5000 &
 
 # Execute the Docker CMD
 
