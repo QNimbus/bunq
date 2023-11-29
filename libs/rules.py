@@ -14,7 +14,7 @@ from jsonschema.exceptions import ValidationError
 # Local application/library imports
 from libs.log import setup_logger
 from libs.exceptions import RuleProcessingError
-from schema.rules_model import Action, RuleType, Condition, Rule, Rules, RuleRoot, RuleGroup, RuleGroupRoot
+from schema.rules_model import Action, RuleType, RuleCondition, Rules, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
 from schema.callback_model import (
     EventType,
     PaymentType,
@@ -28,7 +28,7 @@ logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 # Load rules from JSON file and validate against schema
-def load_rules(schema: any, rules_path: str) -> list[Union[Rule, RuleGroup]]:
+def load_rules(schema: any, rules_path: str) -> list[RuleGroup]:
     """
     Loads the rules from the given JSON file and validates against the schema.
 
@@ -69,7 +69,7 @@ def load_rules(schema: any, rules_path: str) -> list[Union[Rule, RuleGroup]]:
 
 def check_rule(
     data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType,
-    rule: Rule,
+    rule: RuleThatActsOnAProperty | RuleThatActsOnBalance,
 ) -> bool:  # pylint: disable=too-many-locals
     """
     Checks if a given rule matches the given payment data.
@@ -87,7 +87,27 @@ def check_rule(
     try:
         rule_type = rule.type
         rule_value = rule.value
+        rule_case_sensitive = rule.case_sensitive
         property_value = get_nested_property(data.model_dump(), rule.property)
+
+        # Convert rule value to lowercase if rule is not case sensitive
+        if isinstance(property_value, str):
+            if not rule_case_sensitive:
+                property_value = property_value.strip().lower()
+            else:
+                property_value = property_value.strip()
+
+        if isinstance(rule_value, str):
+            if not rule_case_sensitive:
+                rule_value = rule_value.strip().lower()
+            else:
+                rule_value = rule_value.strip()
+
+        if isinstance(rule_value, list) and all(isinstance(item, str) for item in rule_value):
+            if not rule_case_sensitive:
+                rule_value = [item.strip().lower() for item in rule_value]
+            else:
+                rule_value = [item.strip() for item in rule_value]
 
         def regex_match():
             return re.fullmatch(rule_value, property_value or "") is not None
@@ -105,22 +125,44 @@ def check_rule(
             return float(property_value) > 0
 
         def contains():
-            if property_value:
-                low_prop_val = property_value.strip().lower()
-                return any(val.strip().lower() in low_prop_val for val in rule_value)
+            if property_value and rule_value:
+                if isinstance(rule_value, str):
+                    value = [rule_value]
+                else:
+                    value = rule_value
+
+                return any(v in property_value for v in value)
             return False
 
         def does_not_contain():
-            if property_value:
-                low_prop_val = property_value.strip().lower()
-                return all(val.strip().lower() not in low_prop_val for val in rule_value)
-            return True
+            if property_value and rule_value:
+                if isinstance(rule_value, str):
+                    value = [rule_value]
+                else:
+                    value = rule_value
+
+                return all(v not in property_value for v in value)
+            return False
 
         def equals():
-            return property_value == rule_value
+            if property_value and rule_value:
+                if isinstance(rule_value, str):
+                    value = [rule_value]
+                else:
+                    value = rule_value
+
+                return any(v == property_value for v in value)
+            return False
 
         def does_not_equal():
-            return property_value != rule_value
+            if property_value and rule_value:
+                if isinstance(rule_value, str):
+                    value = [rule_value]
+                else:
+                    value = rule_value
+
+                return all(v != property_value for v in value)
+            return False
 
         rule_checks = {
             RuleType.REGEX: regex_match,
@@ -137,16 +179,14 @@ def check_rule(
         return rule_checks[rule_type]()
 
     except Exception as error:  # pylint: disable=broad-except
-        # raise RuleProcessingError(f"Error processing rule: {error}") from error
-        logger.debug(f"Error processing rule: {error}")
-        return False
+        raise RuleProcessingError(f"Error processing rule: {error}") from error
 
 
 def process_rules(
     event_type: EventType,
     data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType,
     rules: Rules,
-) -> (bool, Action, str, str):
+) -> (bool, Action, str):
     """
     Recursively processes a list of rules and returns a tuple containing a boolean indicating whether any of the rules matched
     and a list of all the matched rules.
@@ -161,12 +201,9 @@ def process_rules(
     result = False
     action: Action = None
     rule_name: str = None
-    rule_description: str = None
-    # matching_rules: list[tuple[str, str]] = []
-    # non_matching_rules: list[tuple[str, str]] = []
 
-    def process_and_capture(rule_or_rulegroup: Rule | RuleGroup) -> bool:
-        if isinstance(rule_or_rulegroup, Rule):
+    def process_and_capture(rule_or_rulegroup: Union[Union[RuleThatActsOnAProperty, RuleThatActsOnBalance], RuleGroup]) -> bool:
+        if isinstance(rule_or_rulegroup, Union[RuleThatActsOnAProperty, RuleThatActsOnBalance]):
             rule = rule_or_rulegroup
             result = check_rule(data, rule)
 
@@ -174,11 +211,11 @@ def process_rules(
 
         if isinstance(rule_or_rulegroup, RuleGroup):
             rules = rule_or_rulegroup
-            if rules.condition == Condition.ANY:
+            if rules.condition == RuleCondition.ANY:
                 result = any(process_and_capture(sub_rule) for sub_rule in rules.rules)
-            elif rules.condition == Condition.ALL:
+            elif rules.condition == RuleCondition.ALL:
                 result = all(process_and_capture(sub_rule) for sub_rule in rules.rules)
-            elif rules.condition == Condition.NONE:
+            elif rules.condition == RuleCondition.NONE:
                 results = [process_and_capture(sub_rule) for sub_rule in rules.rules]
                 result = not any(results)
             else:
@@ -188,21 +225,22 @@ def process_rules(
 
         raise ValueError(f"Unknown rule type: {rule_or_rulegroup}")
 
-    for rule in rules:
-        rule: RuleRoot | RuleGroupRoot
+    try:
+        for rule_root in rules:
+            # Get 'action' from rules
+            action = rule_root.action
 
-        # Get 'action' from rules
-        action = rule.action
+            # FIXME: Somehow 'if event_type in rule.action.events' doesn't work. This is a workaround
+            if any(event_type.value == event.value for event in action.events):
+                result = process_and_capture(rule_root.rule)
+                if result:
+                    rule_name = rule_root.name
+                    break
 
-        # FIXME: Somehow 'if event_type in rule.action.events' doesn't work. This is a workaround
-        if any(event.value == event_type.value for event in action.events):
-            result = process_and_capture(rule)
-            if result:
-                rule_name = rule.name
-                rule_description = rule.description
-                break
+    except Exception as error:  # pylint: disable=broad-except
+        logger.error(f"Error processing rules: {error}")
 
-    return result, action, rule_name, rule_description
+    return result, action, rule_name
 
 
 def get_nested_property(data: dict, property_name: str) -> any:

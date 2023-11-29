@@ -32,14 +32,10 @@ def parse_date(date_str):
         argparse.ArgumentTypeError: If the date string is not in the correct format.
     """
     try:
-        date_obj = datetime.datetime.strptime(
-            date_str, "%Y-%m-%d"
-        )  # Adjust the date format as needed
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")  # Adjust the date format as needed
         return date_obj
     except ValueError as exc:
-        raise argparse.ArgumentTypeError(
-            f"Invalid date format: {date_str}. Use YYYY-MM-DD format."
-        ) from exc
+        raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Use YYYY-MM-DD format.") from exc
 
 
 class CLIArgs:
@@ -52,6 +48,7 @@ class CLIArgs:
 
     _ACTION_CREATE_CONFIG_API_KEY = "--api-key"
     _ACTION_CREATE_REQUEST_AMOUNT = "--amount"
+    _ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE = "--include-inactive"
     _ACTION_EXPORT_PATH = "--path"
     _ACTION_EXPORT_STARTDATE = "--start-date"
     _ACTION_EXPORT_ENDDATE = "--end-date"
@@ -72,25 +69,19 @@ class CLIArgs:
         )
 
         # Add subparsers for each action.
-        self.subparsers = self.parser.add_subparsers(
-            dest="action", required=True, help="Action to perform."
-        )
+        self.subparsers = self.parser.add_subparsers(dest="action", required=True, help="Action to perform.")
 
-        self.action_create_config_parser = self.subparsers.add_parser(
-            Action.CREATE_CONFIG.value, help="Create a configuration file."
-        )
+        self.action_create_config_parser = self.subparsers.add_parser(Action.SHOW_USER.value, help="Show user information.")
 
-        self.action_export_parser = self.subparsers.add_parser(
-            Action.EXPORT.value, help="Export data."
-        )
+        self.action_create_config_parser = self.subparsers.add_parser(Action.CREATE_CONFIG.value, help="Create a configuration file.")
 
-        self.action_create_request_parser = self.subparsers.add_parser(
-            Action.CREATE_REQUEST.value, help="Create a request for payment."
-        )
+        self.action_export_parser = self.subparsers.add_parser(Action.EXPORT.value, help="Export data.")
 
-        self.action_remove_all_statements_parser = self.subparsers.add_parser(
-            Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements."
-        )
+        self.action_create_request_parser = self.subparsers.add_parser(Action.CREATE_REQUEST.value, help="Create a request for payment.")
+
+        self.action_show_accounts_parser = self.subparsers.add_parser(Action.SHOW_ACCOUNTS.value, help="Show information abount all accounts.")
+
+        self.action_remove_all_statements_parser = self.subparsers.add_parser(Action.REMOVE_ALL_STATEMENTS.value, help="Remove all existing statements.")
 
         self.action_create_config_parser.add_argument(
             CLIArgs._ACTION_CREATE_CONFIG_API_KEY,
@@ -103,6 +94,13 @@ class CLIArgs:
             CLIArgs._ACTION_CREATE_REQUEST_AMOUNT,
             required=True,
             help="Amount to request.",
+        )
+
+        self.action_show_accounts_parser.add_argument(
+            CLIArgs._ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE,
+            action="store_true",
+            required=False,
+            help="Include inactive accounts.",
         )
 
         self.action_export_parser.add_argument(

@@ -161,9 +161,13 @@
                     "$ref": "#/definitions/AmountType"
                 },
                 "payment_auto_allocate_instance": {
-                    "type": [
-                        "null",
-                        "string"
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/definitions/PaymentAutoAllocateInstance"
+                        }
                     ]
                 }
             },
@@ -181,8 +185,64 @@
                 "geolocation",
                 "sub_type",
                 "request_reference_split_the_bill",
-                "balance_after_mutation"
+                "balance_after_mutation",
+                "payment_auto_allocate_instance"
             ]
+        },
+        "PaymentAutoAllocateInstance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "PaymentAutoAllocateInstance": {
+                    "$ref": "#/definitions/PaymentAutoAllocateInstanceClass"
+                }
+            },
+            "required": [
+                "PaymentAutoAllocateInstance"
+            ],
+            "title": "PaymentAutoAllocateInstance"
+        },
+        "PaymentAutoAllocateInstanceClass": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "created": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "updated": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "payment_auto_allocate_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "array",
+                    "items": {}
+                },
+                "payment_id": {
+                    "type": "integer"
+                },
+                "payment_batch": {
+                    "type": "null"
+                }
+            },
+            "required": [
+                "created",
+                "error_message",
+                "id",
+                "payment_auto_allocate_id",
+                "payment_batch",
+                "payment_id",
+                "status",
+                "updated"
+            ],
+            "title": "PaymentAutoAllocateInstanceClass"
         },
         "RequestInquiryType": {
             "type": "object",
@@ -725,7 +785,8 @@
             "type": "string",
             "enum": [
                 "ALLOWED",
-                "PIN_INCORRECT"
+                "PIN_INCORRECT",
+                "INSUFFICIENT_BALANCE"
             ]
         },
         "CategoryType": {

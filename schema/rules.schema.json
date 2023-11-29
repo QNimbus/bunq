@@ -1,52 +1,12 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
     "definitions": {
-        "actionDefinition": {
+        "RuleProperty": {
             "type": "object",
+            "title": "Rule that acts on a property",
             "properties": {
-                "action": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "title": "Action Type",
-                            "enum": [
-                                "CREATE_REQUEST_FROM_PAYMENT"
-                            ]
-                        },
-                        "data": {
-                            "$ref": "#/definitions/CreateRequestActionData"
-                        },
-                        "events": {
-                            "type": "array",
-                            "title": "Event types",
-                            "items": {
-                                "$ref": "#/definitions/EventType"
-                            }
-                        }
-                    },
-                    "required": [
-                        "type",
-                        "data",
-                        "events"
-                    ],
-                    "additionalProperties": false
-                }
-            },
-            "required": [
-                "action"
-            ],
-            "additionalProperties": true
-        },
-        "rule": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
                 "type": {
-                    "type": "string",
-                    "title": "Rule Type",
+                    "title": "Rule type",
                     "enum": [
                         "REGEX",
                         "EQUALS",
@@ -58,6 +18,17 @@
                         "CONTAINS",
                         "DOES_NOT_CONTAIN"
                     ]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "property": {
+                    "type": "string"
+                },
+                "case_sensitive": {
+                    "title": "Case sensitive comparison",
+                    "type": "boolean",
+                    "default": true
                 },
                 "value": {
                     "oneOf": [
@@ -71,40 +42,191 @@
                             }
                         }
                     ]
-                },
-                "property": {
-                    "type": "string"
                 }
             },
-            "required": [
-                "type",
-                "property"
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "DOES_NOT_CONTAIN",
+                                    "CONTAINS",
+                                    "EQUALS",
+                                    "DOES_NOT_EQUAL"
+                                ]
+                            }
+                        }
+                    },
+                    "then": {
+                        "title": "Rule that checks a property against a string or a list of strings",
+                        "properties": {
+                            "case_sensitive": true,
+                            "value": true,
+                            "property": true
+                        },
+                        "required": [
+                            "value",
+                            "property"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "REGEX"
+                                ]
+                            }
+                        }
+                    },
+                    "then": {
+                        "title": "Rule that checks a property against a regular expression",
+                        "properties": {
+                            "case_sensitive": false,
+                            "value": true,
+                            "property": true
+                        },
+                        "required": [
+                            "value",
+                            "property"
+                        ]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "IS_EMPTY",
+                                    "IS_NOT_EMPTY",
+                                    "IS_NEGATIVE",
+                                    "IS_POSITIVE"
+                                ]
+                            }
+                        }
+                    },
+                    "then": {
+                        "title": "Rule that checks a property against a boolean expression",
+                        "properties": {
+                            "property": true,
+                            "value": false,
+                            "case_sensitive": false
+                        },
+                        "required": [
+                            "property"
+                        ]
+                    }
+                }
             ],
-            "additionalProperties": true
+            "required": [
+                "type"
+            ],
+            "additionalProperties": false
         },
-        "ruleGroup": {
+        "RuleBalance": {
+            "type": "object",
+            "title": "Rule that acts on balance",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                },
+                "by": {
+                    "enum": [
+                        "EXACT",
+                        "AT_LEAST",
+                        "AT_MOST"
+                    ],
+                    "default": "EXACT"
+                },
+                "type": {
+                    "enum": [
+                        "BALANCE_DECREASED",
+                        "BALANCE_INCREASED",
+                        "BALANCE_INCREASED_BY",
+                        "BALANCE_DECREASED_BY"
+                    ]
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "BALANCE_DECREASED",
+                                    "BALANCE_INCREASED"
+                                ]
+                            }
+                        }
+                    },
+                    "then": {
+                        "title": "Rule that checks for balance increase or decrease",
+                        "properties": {
+                            "by": false,
+                            "value": false
+                        },
+                        "required": []
+                    }
+                },
+                {
+                    "if": {
+                        "properties": {
+                            "type": {
+                                "enum": [
+                                    "BALANCE_INCREASED_BY",
+                                    "BALANCE_DECREASED_BY"
+                                ]
+                            }
+                        }
+                    },
+                    "then": {
+                        "title": "Rule that compares the balance change against a value",
+                        "properties": {
+                            "value": true,
+                            "by": true
+                        },
+                        "required": [
+                            "value",
+                            "by"
+                        ]
+                    }
+                }
+            ],
+            "required": [
+                "type"
+            ],
+            "additionalProperties": false
+        },
+        "RuleGroup": {
             "type": "object",
             "properties": {
-                "name": {
+                "description": {
                     "type": "string"
                 },
                 "condition": {
-                    "type": "string",
-                    "enum": [
-                        "ALL",
-                        "ANY",
-                        "NONE"
-                    ]
+                    "$ref": "#/definitions/RuleCondition"
                 },
                 "rules": {
                     "type": "array",
                     "items": {
                         "oneOf": [
                             {
-                                "$ref": "#/definitions/rule"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/RuleProperty"
+                                    },
+                                    {
+                                        "$ref": "#/definitions/RuleBalance"
+                                    }
+                                ]
                             },
                             {
-                                "$ref": "#/definitions/ruleGroup"
+                                "$ref": "#/definitions/RuleGroup"
                             }
                         ]
                     }
@@ -114,7 +236,15 @@
                 "condition",
                 "rules"
             ],
-            "additionalProperties": true
+            "additionalProperties": false
+        },
+        "RuleCondition": {
+            "type": "string",
+            "enum": [
+                "ALL",
+                "ANY",
+                "NONE"
+            ]
         },
         "CreateRequestActionData": {
             "type": "object",
@@ -123,11 +253,7 @@
                     "type": "string",
                     "default": "amount.value"
                 },
-                "amount_value_absolute": {
-                    "type": "boolean",
-                    "default": true
-                },
-                "append_original_description": {
+                "ignore_own_accounts": {
                     "type": "boolean",
                     "default": true
                 },
@@ -135,12 +261,34 @@
                     "$ref": "#/definitions/BankAccount"
                 },
                 "description": {
-                    "type": "string",
-                    "default": ""
+                    "type": "string"
                 }
             },
             "required": [
                 "request_from"
+            ],
+            "additionalProperties": false
+        },
+        "ForwardPaymentActionData": {
+            "type": "object",
+            "properties": {
+                "amount_value_property": {
+                    "type": "string",
+                    "default": "amount.value"
+                },
+                "allow_third_party_accounts": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "forward_payment_to": {
+                    "$ref": "#/definitions/BankAccount"
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "forward_payment_to"
             ],
             "additionalProperties": false
         },
@@ -183,31 +331,126 @@
     "items": {
         "type": "object",
         "title": "RuleRoot",
-        "oneOf": [
-            {
-                "type": "object",
-                "title": "Rule root",
-                "allOf": [
-                    {
-                        "$ref": "#/definitions/actionDefinition"
-                    },
-                    {
-                        "$ref": "#/definitions/rule"
-                    }
-                ]
+        "properties": {
+            "name": {
+                "type": "string"
             },
-            {
+            "action": {
                 "type": "object",
-                "title": "RuleGroup root",
+                "properties": {
+                    "type": {
+                        "title": "Action Type",
+                        "enum": [
+                            "REQUEST_FROM_PAYMENT",
+                            "FORWARD_INCOMING_PAYMENT",
+                            "FORWARD_PAYMENT"
+                        ]
+                    },
+                    "events": {
+                        "type": "array",
+                        "title": "Event types",
+                        "items": {
+                            "$ref": "#/definitions/EventType"
+                        }
+                    },
+                    "data": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/CreateRequestActionData"
+                            },
+                            {
+                                "$ref": "#/definitions/ForwardPaymentActionData"
+                            }
+                        ]
+                    }
+                },
                 "allOf": [
                     {
-                        "$ref": "#/definitions/actionDefinition"
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "REQUEST_FROM_PAYMENT"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/CreateRequestActionData"
+                                }
+                            },
+                            "required": [
+                                "data"
+                            ]
+                        }
                     },
                     {
-                        "$ref": "#/definitions/ruleGroup"
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "FORWARD_PAYMENT"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/ForwardPaymentActionData"
+                                }
+                            },
+                            "required": [
+                                "data"
+                            ]
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "FORWARD_INCOMING_PAYMENT"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/ForwardPaymentActionData"
+                                }
+                            },
+                            "required": [
+                                "data"
+                            ]
+                        }
+                    }
+                ],
+                "required": [
+                    "type",
+                    "events"
+                ],
+                "additionalProperties": false
+            },
+            "rule": {
+                "oneOf": [
+                    {
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/RuleProperty"
+                            },
+                            {
+                                "$ref": "#/definitions/RuleBalance"
+                            }
+                        ]
+                    },
+                    {
+                        "$ref": "#/definitions/RuleGroup"
                     }
                 ]
             }
-        ]
+        },
+        "required": [
+            "action",
+            "rule"
+        ],
+        "additionalProperties": false
     }
 }

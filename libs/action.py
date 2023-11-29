@@ -16,6 +16,8 @@ class Action(Enum):
     """
 
     EXPORT = "export"
+    SHOW_USER = "show-user"
+    SHOW_ACCOUNTS = "show-accounts"
     CREATE_CONFIG = "create-config"
     CREATE_REQUEST = "create-request"
     REMOVE_ALL_STATEMENTS = "remove-all-statements"

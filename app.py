@@ -17,6 +17,7 @@ from libs.log import setup_logger
 from libs.argparser import Action, CLIArgs
 from libs.utils import write_statement_to_file
 from libs.exceptions import ConfigFileExistsError, PathNotWritableError
+from libs.share_lib import ShareLib
 from libs.bunq_lib import (
     BunqLib,
     StatementFormat,
@@ -66,37 +67,45 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         if self.action == Action.CREATE_CONFIG:
             if "api_key" not in kwargs or kwargs["api_key"] is None:
-                raise KeyError(
-                    "The '--api-key' argument is required but was not provided."
-                )
+                raise KeyError("The '--api-key' argument is required but was not provided.")
             if "config_file" not in kwargs or kwargs["config_file"] is None:
-                raise KeyError(
-                    "The '--config-file' argument is required but was not provided."
-                )
+                raise KeyError("The '--config-file' argument is required but was not provided.")
 
             api_key = kwargs["api_key"]
             config_file = kwargs["config_file"]
 
-            self.create_config(
-                config_file=config_file, api_key=api_key, overwrite=False
-            )
+            self.create_config(config_file=config_file, api_key=api_key, overwrite=False)
+            return
+
+        if self.action == Action.SHOW_USER:
+            if "config_file" not in kwargs or kwargs["config_file"] is None:
+                raise KeyError("The '--config-file' argument is required but was not provided.")
+
+            config_file = kwargs["config_file"]
+
+            self.show_user(config_file=config_file)
+
+            return
+
+        if self.action == Action.SHOW_ACCOUNTS:
+            if "config_file" not in kwargs or kwargs["config_file"] is None:
+                raise KeyError("The '--config-file' argument is required but was not provided.")
+
+            config_file = kwargs["config_file"]
+
+            self.show_accounts(config_file=config_file, include_inactive=kwargs["include_inactive"])
+
             return
 
         if self.action == Action.EXPORT:
             if "config_file" not in kwargs or kwargs["config_file"] is None:
-                raise KeyError(
-                    "The '--config-file' argument is required but was not provided."
-                )
+                raise KeyError("The '--config-file' argument is required but was not provided.")
             if "path" not in kwargs or kwargs["path"] is None:
                 raise KeyError("The 'path' argument is required but was not provided.")
             if "start_date" not in kwargs or kwargs["start_date"] is None:
-                raise KeyError(
-                    "The 'start_date' argument is required but was not provided."
-                )
+                raise KeyError("The 'start_date' argument is required but was not provided.")
             if "end_date" not in kwargs or kwargs["end_date"] is None:
-                raise KeyError(
-                    "The 'end_date' argument is required but was not provided."
-                )
+                raise KeyError("The 'end_date' argument is required but was not provided.")
 
             config_file = kwargs["config_file"]
             path = kwargs["path"]
@@ -113,9 +122,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         if self.action == Action.REMOVE_ALL_STATEMENTS:
             if "config_file" not in kwargs or kwargs["config_file"] is None:
-                raise KeyError(
-                    "The '--config-file' argument is required but was not provided."
-                )
+                raise KeyError("The '--config-file' argument is required but was not provided.")
 
             config_file = kwargs["config_file"]
             self.remove_all_statements(config_file=config_file)
@@ -136,7 +143,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         """
         bunq = BunqLib(self.is_production, config_file)
 
-        bunq.create_request_inquiry(
+        bunq.make_request(
             amount=amount,
             monetary_account_id=monetary_account_id,
             counterparty=counterparty,
@@ -159,9 +166,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         bunq = BunqLib(self.is_production, config_file)
         user = bunq.get_current_user()
 
-        self.logger.info(
-            f"Attempting to export all statements for user {user.display_name} ({user.id_})"
-        )
+        self.logger.info(f"Attempting to export all statements for user {user.display_name} ({user.id_})")
 
         accounts_active = bunq.get_all_accounts(only_active=True)
 
@@ -169,9 +174,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         # Loop over accounts 'accounts_active'
         for account in accounts_active:
-            self.logger.info(
-                f"Attempting to export statements for account '{account.description}' ({account.id_})"
-            )
+            self.logger.info(f"Attempting to export statements for account '{account.description}' ({account.id_})")
 
             # Generate statement
             statement_id = bunq.create_statement(
@@ -186,9 +189,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
             statement = bunq.get_statement(statement_id, account.id_)
 
             if statement is None:
-                self.logger.warning(
-                    f"Statement for account '{account.description}' with statement id {statement_id} not found"
-                )
+                self.logger.warning(f"Statement for account '{account.description}' with statement id {statement_id} not found")
                 continue
 
             statement_data = bunq.export_statement(statement.id_, account.id_)
@@ -206,11 +207,27 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
             bunq.delete_statement(statement.id_, account.id_)
 
-            self.logger.info(
-                f"Exported statement for account '{account.description}' to '{filename}'"
-            )
+            self.logger.info(f"Exported statement for account '{account.description}' to '{filename}'")
 
         bunq.update_context()
+
+    def show_user(self, config_file: str):
+        bunq = BunqLib(self.is_production, config_file)
+        user = bunq.get_current_user()
+
+        ShareLib.print_user(user)
+
+    def show_accounts(self, config_file: str, include_inactive: bool = False):
+        bunq = BunqLib(self.is_production, config_file)
+        user = bunq.get_current_user()
+
+        self.logger.info(f"Attempting to show all accounts for user {user.display_name} ({user.id_})")
+
+        accounts = bunq.get_all_accounts(only_active=(not include_inactive))
+
+        ShareLib.print_all_monetary_account_bank(accounts)
+
+        self.logger.info(f"Found {len(accounts)} accounts")
 
     def create_config(self, config_file: str, api_key: str, overwrite: bool = False):
         """
@@ -225,9 +242,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         # Check if the destination path is writeable
         if not os.access(os.path.dirname(os.path.abspath(config_file)), os.W_OK):
-            raise PathNotWritableError(
-                f"Destination path {os.path.dirname(config_file)} is not writeable"
-            )
+            raise PathNotWritableError(f"Destination path {os.path.dirname(config_file)} is not writeable")
 
         if self.is_production:
             api_context = ApiContext.create(
@@ -253,9 +268,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         bunq = BunqLib(self.is_production, config_file)
         user = bunq.get_current_user()
 
-        self.logger.info(
-            f"Attempting to remove all statements for user {user.display_name} ({user.id_})"
-        )
+        self.logger.info(f"Attempting to remove all statements for user {user.display_name} ({user.id_})")
 
         accounts_active = bunq.get_all_accounts(only_active=True)
 
@@ -263,9 +276,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         # Loop over accounts 'accounts_active'
         for account in accounts_active:
-            self.logger.info(
-                f"Removing statements for account '{account.description}' ({account.id_})"
-            )
+            self.logger.info(f"Removing statements for account '{account.description}' ({account.id_})")
 
             bunq.delete_all_statements(account)
 

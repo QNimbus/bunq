@@ -17,6 +17,7 @@ from bunq.sdk.model.generated.endpoint import (
     UserPerson,
     UserCompany,
     UserLight,
+    Payment,
     ExportStatement,
     ExportStatementContent,
     MonetaryAccountBank,
@@ -35,7 +36,6 @@ from libs.exceptions import (
 )
 
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
-
 
 @dataclass
 class CounterParty:
@@ -65,6 +65,23 @@ class RequestInquiryOptions:
         The description of the request inquiry.
     currency : str, optional
         The currency of the request inquiry. Defaults to "EUR".
+    """
+
+    description: str
+    currency: str = "EUR"
+
+
+@dataclass
+class PaymentOptions:
+    """
+    A class representing options for creating a payment.
+
+    Attributes:
+    -----------
+    description : str
+        The description of the payment.
+    currency : str, optional
+        The currency of the payment. Defaults to "EUR".
     """
 
     description: str
@@ -134,10 +151,21 @@ class BunqLib:
             # don't attempt to compare against unrelated types
             return NotImplemented
 
-        return self.config_file == other.config_file
+        return self.user._id == self.user._id
+
+    def __str__(self):
+        return self.user.to_json()
 
     def __hash__(self):
-        return hash(self.config_file)
+        return hash(self.user.to_json())
+    
+    def to_dict(self):
+        return {
+            "config_file": self.config_file,
+            "env": self.env,
+            "api_context": self.api_context,
+            "user": self.user,
+        }
 
     def setup_context(self) -> None:
         """
@@ -310,7 +338,26 @@ class BunqLib:
             regional_format=regional_format.value,
         ).value
 
-    def create_request_inquiry(
+    def make_payment(
+        self,
+        amount: float,
+        monetary_account_id: int,
+        counterparty: CounterParty,
+        options: PaymentOptions = None,
+    ) -> int:
+        self.setup_context()
+
+        if options is None:
+            options = PaymentOptions(description="AUTO-GENERATED PAYMENT")
+
+        return Payment.create(
+            amount=Amount(value=amount, currency=options.currency),
+            counterparty_alias=Pointer(type_="IBAN", value=counterparty.iban, name=counterparty.name),
+            description=options.description,
+            monetary_account_id=monetary_account_id,
+        ).value
+
+    def make_request(
         self,
         amount: float,
         monetary_account_id: int,

@@ -3,10 +3,18 @@
 {
 	"name": "Ubuntu",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/base:jammy",
+	// "image": "mcr.microsoft.com/devcontainers/base:jammy",
+	"dockerComposeFile": "docker-compose.yaml",
+	"service": "app",
+	// The 'workspaceFolder' property is the path VS Code should open by default when
+	// connected. Corresponds to a volume mount in .devcontainer/docker-compose.yml
+	"workspaceFolder": "/workspace",
 	"remoteEnv": {
 		"PYTHONPATH": "${containerWorkspaceFolder}"
 	},
+	"forwardPorts": [
+		6379
+	],
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -37,12 +45,12 @@
 		}
 	},
 	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker": {
+			"version": "latest"
+		},
 		"ghcr.io/devcontainers/features/python:1": {
 			"installTools": false,
 			"version": "3.11"
-		},
-		"ghcr.io/devcontainers/features/docker-in-docker": {
-			"version": "latest"
 		},
 		"ghcr.io/devcontainers-contrib/features/chisel:1": {
 			"version": "latest"

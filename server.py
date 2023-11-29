@@ -4,7 +4,6 @@
 import os
 import json
 from typing import Union
-from functools import cache
 
 # Third-party imports
 from pydantic import TypeAdapter
@@ -13,10 +12,12 @@ from jsonschema.exceptions import ValidationError
 from flask import Flask, jsonify, request, current_app
 
 # Local application/library imports
+from libs.redis import redis_memoize
 from libs.bunq_lib import (
     BunqLib,
     CounterParty,
     RequestInquiryOptions,
+    PaymentOptions,
     MonetaryAccountBank,
     MonetaryAccountJoint,
     MonetaryAccountSavings,
@@ -25,7 +26,7 @@ from libs.log import setup_logger, setup_logger_with_rotating_file_handler
 from libs.decorator import route, routes
 from libs.rules import process_rules, load_rules, get_nested_property
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
-from schema.rules_model import Rules, Action
+from schema.rules_model import Rules, Action, ForwardPaymentActionData, CreateRequestActionData
 from schema.callback_model import (
     CallbackModel,
     EventType,
@@ -41,13 +42,20 @@ logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 callback_logger = setup_logger_with_rotating_file_handler(
     "callback",
     log_level="INFO",
-    filename="data/callback.log",
+    filename="logs/callback.log",
+    max_bytes=100 * 1024 * 1024,
+    backup_count=5,
+)
+failed_callback_logger = setup_logger_with_rotating_file_handler(
+    "fail",
+    log_level="INFO",
+    filename="logs/fail.log",
     max_bytes=100 * 1024 * 1024,
     backup_count=5,
 )
 
 
-# @cache
+@redis_memoize
 def get_all_accounts(
     bunq_lib: BunqLib,
 ) -> dict[str, Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings]]:
@@ -58,7 +66,7 @@ def get_all_accounts(
 def process_payment(
     app: Flask,
     event_type: EventType,
-    data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType | None,
+    callback_data: CallbackModel,
 ) -> None:
     """
     Process a payment created notification and create a request in Bunq if the payment matches the rules.
@@ -71,27 +79,32 @@ def process_payment(
         None
     """
     # Return early if data is None
-    if data is None:
+    if callback_data is None:
         return
+
+    data = TypeAdapter(PaymentType).validate_python(callback_data.NotificationUrl.object.root.Payment)
 
     logger.debug(f"{event_type.value}: {data}")
 
-    bunq_accounts: list[BunqLib] = current_app.config["BUNQ_ACCOUNTS"]
+    bunq_accounts: list[BunqLib] = app.config["BUNQ_ACCOUNTS"]
     rule_collections: dict[str, Rules] = app.config["RULES"]
 
     for rules_file, rules in rule_collections.items():
         logger.debug(f"Processing rule: {rules_file}")
 
         action: Action
-        success, action, rule_name, rule_description = process_rules(event_type=event_type, data=data, rules=rules)
+        success, action, rule_name = process_rules(event_type=event_type, data=data, rules=rules)
 
         # If the rule is not successful or no action is found, continue to the next rule
         if not success or action is None:
             continue
 
+        # Keep track of 'Payment.id' to prevent duplicate requests
+        
+
         # If data is type of PaymentType:
         if isinstance(data, PaymentType):
-            if action.type.value == "CREATE_REQUEST_FROM_PAYMENT":
+            if action.type.value == "FORWARD_PAYMENT":
                 monetary_account_id = data.monetary_account_id
                 # Loop over BunqLib instances
                 for bunq_lib in bunq_accounts:
@@ -101,11 +114,45 @@ def process_payment(
                     # If the monetary account id is found in the accounts list, create a request
                     if monetary_account_id in accounts.keys():
                         account = accounts[monetary_account_id]
-                        logger.info(
-                            f"{event_type.value}: {account.display_name} - '{data.description}' matches '{rule_name}::{rule_description}' rules in {rules_file}"
-                        )
+                        action = TypeAdapter(ForwardPaymentActionData).validate_python(action.data)
 
-                        action_create_request_from_payment(bunq=bunq_lib, action=action, payment=data)
+                        logger.info(f"{event_type.value}: {account.display_name} - '{data.description}' matches '{rules_file}::{rule_name}'")
+
+                        action_forward_payment(bunq=bunq_lib, action=action, payment=data)
+                        break
+
+            elif action.type.value == "FORWARD_INCOMING_PAYMENT":
+                monetary_account_id = data.monetary_account_id
+                # Loop over BunqLib instances
+                for bunq_lib in bunq_accounts:
+                    # Create array of monetary account ids from accounts list
+                    accounts = get_all_accounts(bunq_lib)
+
+                    # If the monetary account id is found in the accounts list, create a request
+                    if monetary_account_id in accounts.keys():
+                        account = accounts[monetary_account_id]
+                        action = TypeAdapter(ForwardPaymentActionData).validate_python(action.data)
+
+                        logger.info(f"{event_type.value}: {account.display_name} - '{data.description}' matches '{rules_file}::{rule_name}'")
+
+                        action_forward_incoming_payment(bunq=bunq_lib, action=action, payment=data)
+                        break
+
+            elif action.type.value == "REQUEST_FROM_PAYMENT":
+                monetary_account_id = data.monetary_account_id
+                # Loop over BunqLib instances
+                for bunq_lib in bunq_accounts:
+                    # Create array of monetary account ids from accounts list
+                    accounts = get_all_accounts(bunq_lib)
+
+                    # If the monetary account id is found in the accounts list, create a request
+                    if monetary_account_id in accounts.keys():
+                        account = accounts[monetary_account_id]
+                        action = TypeAdapter(CreateRequestActionData).validate_python(action.data)
+
+                        logger.info(f"{event_type.value}: {account.display_name} - '{data.description}' matches '{rules_file}::{rule_name}'")
+
+                        action_request_from_payment(bunq=bunq_lib, action=action, payment=data)
                         break
 
 
@@ -123,27 +170,97 @@ def process_unregistered_event(app: Flask, event_type: EventType, data: any) -> 
     logger.debug(f"Unregistered event type: {event_type}")
 
 
-def action_create_request_from_payment(bunq: BunqLib, action: Action, payment: PaymentType) -> None:
-    description = action.data.description
+def action_forward_payment(bunq: BunqLib, action: ForwardPaymentActionData, payment: PaymentType) -> None:
+    # Get own accounts
+    accounts = get_all_accounts(bunq)
+
+    description = payment.description
     counterparty = CounterParty(
-        name=action.data.request_from.name,
-        iban=action.data.request_from.iban,
+        name=action.forward_payment_to.name,
+        iban=action.forward_payment_to.iban,
     )
-    make_abs = action.data.amount_value_absolute
-    amount = float(get_nested_property(payment.model_dump(), action.data.amount_value_property))
+    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property)) * -1
 
-    if (make_abs is not None) and make_abs:
-        amount = abs(amount)
+    if payment.monetary_account_id not in accounts.keys() or action.allow_third_party_accounts:
+        logger.info(f"Forwarding to third party accounts is not allowed: {payment.monetary_account_id}")
+        return
 
-    if action.data.append_original_description:
-        description = f"{description} - {payment.description}"
+    if amount <= 0:
+        logger.info(f"Ignoring payment with amount: {amount}")
+        return
 
-    bunq.create_request_inquiry(
-        amount=amount,
-        counterparty=counterparty,
-        monetary_account_id=payment.monetary_account_id,
-        options=RequestInquiryOptions(description=description),
+    if action.description is not None:
+        description = f"{action.description} - {description}"
+
+    logger.info(f"Forwarding payment: {payment.monetary_account_id} - {description}")
+
+    # bunq.make_payment(
+    #     amount=amount,
+    #     counterparty=counterparty,
+    #     monetary_account_id=payment.monetary_account_id,
+    #     options=PaymentOptions(description=description),
+    # )
+
+
+def action_forward_incoming_payment(bunq: BunqLib, action: ForwardPaymentActionData, payment: PaymentType) -> None:
+    # Get own accounts
+    accounts = get_all_accounts(bunq)
+
+    description = payment.description
+    counterparty = CounterParty(
+        name=action.forward_payment_to.name,
+        iban=action.forward_payment_to.iban,
     )
+    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property))
+
+    if payment.monetary_account_id not in accounts.keys() or action.allow_third_party_accounts:
+        logger.info(f"Forwarding to third party accounts is not allowed: {payment.monetary_account_id}")
+        return
+
+    if amount <= 0:
+        logger.info(f"Ignoring payment with amount: {amount}")
+        return
+
+    if action.description is not None:
+        description = f"{action.description} - {description}"
+
+    logger.info(f"Forwarding payment: {payment.monetary_account_id} - {description}")
+
+    # bunq.make_payment(
+    #     amount=amount,
+    #     counterparty=counterparty,
+    #     monetary_account_id=payment.monetary_account_id,
+    #     options=PaymentOptions(description=description),
+    # )
+
+
+def action_request_from_payment(bunq: BunqLib, action: CreateRequestActionData, payment: PaymentType) -> None:
+    # Get own accounts
+    accounts = get_all_accounts(bunq)
+
+    description = payment.description
+    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property)) * -1
+    counterparty = CounterParty(name=action.request_from.name, iban=action.request_from.iban)
+
+    if action.ignore_own_accounts and payment.counterparty_alias.iban in accounts.keys():
+        logger.info(f"Ignoring own account: {accounts[payment.counterparty_alias.iban].description}")
+        return
+
+    if amount <= 0:
+        logger.info(f"Ignoring payment with amount: {amount}")
+        return
+
+    if action.description is not None:
+        description = f"{action.description} - {description}"
+
+    logger.info(f"Creating request: {payment.monetary_account_id} - {description}")
+
+    # bunq.make_request(
+    #     amount=amount,
+    #     counterparty=counterparty,
+    #     monetary_account_id=payment.monetary_account_id,
+    #     options=RequestInquiryOptions(description=description),
+    # )
 
 
 @route("/health", methods=["GET"])
@@ -173,57 +290,60 @@ def callback():
     """
     # Return 400 if the request is not JSON
     if not request.is_json:
+        logger.info(f"Invalid request: {request}")
         return jsonify({"message": "Invalid request"}), 400
 
     try:
         request_data = request.get_json()
         request_schema = current_app.config["CALLBACK_SCHEMA"]
 
-        # Log the json data
-        callback_logger.info(json.dumps(request_data))
-
         # Validate the request data against the schema
         validate(instance=request_data, schema=request_schema)
 
-        # Log callback data
-        logger.debug(f"Callback data: {json.dumps(request_data)}")
+        # Log the json data
+        callback_logger.info(json.dumps(request_data))
 
         callback_data = TypeAdapter(CallbackModel).validate_python(request_data)
         event_type = callback_data.NotificationUrl.event_type
 
         # Dictionary to simulate a switch/case structure
         switcher = {
-            "PAYMENT_CREATED": (process_payment, "Payment"),
-            "PAYMENT_RECEIVED": (process_payment, "Payment"),
-            "MUTATION_CREATED": (process_payment, "Payment"),
-            "MUTATION_RECEIVED": (process_payment, "Payment"),
-            "CARD_PAYMENT_ALLOWED": (None, None),
-            "CARD_TRANSACTION_NOT_ALLOWED": (None, None),
-            "REQUEST_INQUIRY_CREATED": (None, None),
-            "REQUEST_INQUIRY_ACCEPTED": (None, None),
-            "REQUEST_INQUIRY_REJECTED": (None, None),
-            "REQUEST_RESPONSE_CREATED": (None, None),
-            "REQUEST_RESPONSE_ACCEPTED": (None, None),
-            "REQUEST_RESPONSE_REJECTED": (None, None),
+            "PAYMENT_CREATED": process_payment,
+            "PAYMENT_RECEIVED": process_payment,
+            "MUTATION_CREATED": process_payment,
+            "MUTATION_RECEIVED": process_payment,
+            "CARD_PAYMENT_ALLOWED": None,
+            "CARD_TRANSACTION_NOT_ALLOWED": None,
+            "REQUEST_INQUIRY_CREATED": None,
+            "REQUEST_INQUIRY_ACCEPTED": None,
+            "REQUEST_INQUIRY_REJECTED": None,
+            "REQUEST_RESPONSE_CREATED": None,
+            "REQUEST_RESPONSE_ACCEPTED": None,
+            "REQUEST_RESPONSE_REJECTED": None,
         }
 
         # Get the function from switcher dictionary
-        handler, data_object = switcher.get(event_type.value, process_unregistered_event)
+        handler = switcher.get(event_type.value, process_unregistered_event)
 
-        # Execute the function if handler is not None:
-        if handler is not None:
+        # Execute the handler function if it exists and pass the data object
+        if handler is not None and callback_data is not None:
             handler(
                 app=current_app,
                 event_type=event_type,
-                data=callback_data.NotificationUrl.object.root.Payment,
+                callback_data=callback_data,
             )
+
+        logger.info(f"Callback processed: {event_type.value}")
 
         return jsonify({"message": "Success"})
     except ValidationError:
-        # Log failed schema validation
-        logger.debug(f"Callback data failed validation: {json.dumps(request_data)}")
+        # Log the failed callback json data
+        failed_callback_logger.info(json.dumps(request_data))
 
-        return jsonify({"message": "Invalid request"}), 400
+        logger.info(f"Schema mismatch: {request}")
+
+        # Return 200 to prevent Bunq callback api to retry the request
+        return jsonify({"message": "Schema mismatch"}), 200
 
 
 def create_server(allowed_ips: list[str] = None) -> Flask:
