@@ -1,0 +1,137 @@
+{
+    "NotificationUrl": {
+        "target_url": "http://miller.org/",
+        "category": "MUTATION",
+        "event_type": "MUTATION_RECEIVED",
+        "object": {
+            "Payment": {
+                "id": 206910,
+                "created": "2023-12-01 18:02:46.888848",
+                "updated": "2023-12-02 00:37:31.857281",
+                "monetary_account_id": 317109,
+                "amount": {
+                    "currency": "EUR",
+                    "value": "1.00"
+                },
+                "description": "Base under full get trouble go.",
+                "type": "BUNQ",
+                "merchant_reference": null,
+                "alias": {
+                    "iban": "GB10FXQS26018310663771",
+                    "is_light": false,
+                    "display_name": "William Rogers",
+                    "avatar": {
+                        "uuid": "900d856a-a547-405c-90e8-699c9cf4deff",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "d76c0cd7-aa4f-426b-ad2c-c5581402dcaf",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://alvarado.biz/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "9b2e6607-67f7-40ef-9758-cecf461e36c1",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "ffa5a292-bb30-492b-a64c-9810e57d179a",
+                        "display_name": "Kelly Jackson",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "54f9255e-e6a3-4bfa-a972-de275423ba7c",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "ae705d71-1b15-42c5-9573-b0b05e0051c4",
+                                    "height": 1024,
+                                    "width": 768,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://murray.org/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "dbcec9a5-6b02-4032-bee6-294dad60cb65",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Jennifer Contreras",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "counterparty_alias": {
+                    "iban": "GB75OCUI00595050163432",
+                    "is_light": false,
+                    "display_name": "Katie Fisher",
+                    "avatar": {
+                        "uuid": "54f074e1-9019-4844-b1b6-80b3cb7cdd41",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "5ede80aa-f9ae-4942-bdcd-a4adcac3d1be",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.may.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "40cbaec3-7f47-46ac-a7e4-e76e515d9b69",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "c4b251f0-7117-43fd-8d0f-30fb140af525",
+                        "display_name": "Kevin Hughes",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "34be8fe6-6c0e-4cdc-a825-29495eff9917",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "3d447ba4-f66a-4c4a-9b7b-4524f2d4efcb",
+                                    "height": 1024,
+                                    "width": 768,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://www.contreras.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "afc1f551-16bd-415d-ba60-c75c7ddf7822",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Samantha Robinson",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": [],
+                "geolocation": null,
+                "batch_id": null,
+                "scheduled_id": null,
+                "address_billing": null,
+                "address_shipping": null,
+                "sub_type": "PAYMENT",
+                "request_reference_split_the_bill": [],
+                "balance_after_mutation": {
+                    "currency": "EUR",
+                    "value": "335.74"
+                },
+                "payment_auto_allocate_instance": null
+            }
+        }
+    }
+}

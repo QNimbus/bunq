@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-# entrypoint.sh
+# start_chisel.sh
 
 # Hack since vscode tasks.json doesn't support envFile (yet)
 if [[ -f .env ]]; then

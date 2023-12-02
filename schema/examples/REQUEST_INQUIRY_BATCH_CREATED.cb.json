@@ -1,0 +1,325 @@
+{
+    "NotificationUrl": {
+        "target_url": "http://www.taylor-arnold.biz/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_INQUIRY_BATCH_CREATED",
+        "object": {
+            "RequestInquiryBatch": {
+                "id": 428733,
+                "created": "2023-12-03 18:34:50.723693",
+                "updated": "2023-12-02 11:25:34.837608",
+                "request_inquiries": [
+                    {
+                        "id": 614159,
+                        "created": "2023-12-03 13:03:09.573059",
+                        "updated": "2023-12-02 12:54:51.752923",
+                        "time_responded": null,
+                        "time_expiry": null,
+                        "monetary_account_id": 578220,
+                        "amount_inquired": {
+                            "currency": "EUR",
+                            "value": "97.50"
+                        },
+                        "amount_responded": null,
+                        "status": "PENDING",
+                        "description": "Window so look resource try toward money. Full leg ask close data.",
+                        "merchant_reference": null,
+                        "user_alias_created": {
+                            "iban": "GB25BMRG84786365466166",
+                            "is_light": false,
+                            "display_name": "Jacqueline Pace",
+                            "avatar": {
+                                "uuid": "82cbbd54-5692-4937-907d-8eaebf5f1e01",
+                                "image": [
+                                    {
+                                        "attachment_public_uuid": "1dfbf9f7-e4d3-4042-b424-abc72e17127e",
+                                        "height": 525,
+                                        "width": 525,
+                                        "content_type": "image/jpeg",
+                                        "urls": [
+                                            {
+                                                "type": "ORIGINAL",
+                                                "url": "http://www.allen-bush.com/"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "anchor_uuid": "ad507727-08cc-4e2c-a193-d1ec4ace695b",
+                                "style": "NONE"
+                            },
+                            "label_user": {
+                                "uuid": "d365b4c0-a066-4296-b1c3-977bca9250a4",
+                                "display_name": "Michael Butler",
+                                "country": "NL",
+                                "avatar": {
+                                    "uuid": "54f1a033-c3ef-42d1-80ff-29c618e14d69",
+                                    "image": [
+                                        {
+                                            "attachment_public_uuid": "45f0725d-d2ab-477f-a9a0-c3472fbfd9f0",
+                                            "height": 1024,
+                                            "width": 683,
+                                            "content_type": "image/jpeg",
+                                            "urls": [
+                                                {
+                                                    "type": "ORIGINAL",
+                                                    "url": "http://moore.info/"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "anchor_uuid": "37b4590d-48a2-4295-bec5-5684de840e34",
+                                    "style": "NONE"
+                                },
+                                "public_nick_name": "Kristen Williams",
+                                "type": "PERSON"
+                            },
+                            "country": "NL"
+                        },
+                        "user_alias_revoked": null,
+                        "counterparty_alias": {
+                            "iban": "GB51PBZA73843979607561",
+                            "is_light": false,
+                            "display_name": "Tina Campbell",
+                            "avatar": {
+                                "uuid": "aa274846-f8f4-4a9a-806a-30d819401278",
+                                "image": [
+                                    {
+                                        "attachment_public_uuid": "a4b27fe0-d200-4bc8-89d2-de4144164035",
+                                        "height": 525,
+                                        "width": 525,
+                                        "content_type": "image/jpeg",
+                                        "urls": [
+                                            {
+                                                "type": "ORIGINAL",
+                                                "url": "http://www.cline-levy.biz/"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "anchor_uuid": "2b0d7024-e821-4d88-a6b5-37ae428ceb5a",
+                                "style": "NONE"
+                            },
+                            "label_user": {
+                                "uuid": "a4145a0f-93bf-482c-871e-2e9651fc2469",
+                                "display_name": "John Montgomery",
+                                "country": "NL",
+                                "avatar": {
+                                    "uuid": "4145f50f-29a3-407b-b137-b2777ac2cbef",
+                                    "image": [
+                                        {
+                                            "attachment_public_uuid": "98f23993-c364-4f99-bbe0-15e8362c55e4",
+                                            "height": 1024,
+                                            "width": 768,
+                                            "content_type": "image/jpeg",
+                                            "urls": [
+                                                {
+                                                    "type": "ORIGINAL",
+                                                    "url": "https://knight.org/"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "anchor_uuid": "f793f3b5-2cc4-4c88-b126-77f6eeeebc67",
+                                    "style": "NONE"
+                                },
+                                "public_nick_name": "Jonathan Nichols",
+                                "type": "PERSON"
+                            },
+                            "country": "NL"
+                        },
+                        "attachment": [],
+                        "minimum_age": null,
+                        "require_address": null,
+                        "geolocation": {
+                            "latitude": -70.227197,
+                            "longitude": 62.630397,
+                            "altitude": 4.899577844452363,
+                            "radius": 11.543
+                        },
+                        "type": "INTERNAL",
+                        "sub_type": "NONE",
+                        "bunqme_share_url": null,
+                        "redirect_url": null,
+                        "reference_split_the_bill": null,
+                        "batch_id": 385033,
+                        "scheduled_id": null,
+                        "address_billing": null,
+                        "address_shipping": null,
+                        "all_auto_save_entry": []
+                    }
+                ],
+                "total_amount_inquired": {
+                    "currency": "EUR",
+                    "value": "195.00"
+                },
+                "reference_split_the_bill": {
+                    "MasterCardAction": {
+                        "id": 666306,
+                        "created": "2023-12-04 00:39:43.615802",
+                        "updated": "2023-12-03 05:23:32.021038",
+                        "monetary_account_id": 496911,
+                        "card_id": 3486643,
+                        "card_authorisation_id_response": "JH1KJD",
+                        "amount_local": {
+                            "currency": "EUR",
+                            "value": "195.00"
+                        },
+                        "amount_converted": {
+                            "currency": "EUR",
+                            "value": "195.00"
+                        },
+                        "amount_billing": {
+                            "currency": "EUR",
+                            "value": "195.00"
+                        },
+                        "amount_original_local": {
+                            "currency": "EUR",
+                            "value": "195.00"
+                        },
+                        "amount_original_billing": {
+                            "currency": "EUR",
+                            "value": "195.00"
+                        },
+                        "amount_fee": {
+                            "currency": "EUR",
+                            "value": "0.00"
+                        },
+                        "decision": "ALLOWED",
+                        "payment_status": "PAYMENT_SUCCESSFUL_SETTLED",
+                        "decision_description": "",
+                        "decision_description_translated": "",
+                        "decision_together_url": null,
+                        "description": "Up increase west professional wish identify life meeting.",
+                        "authorisation_status": "AUTHORISED",
+                        "authorisation_type": "NORMAL_AUTHORISATION",
+                        "settlement_status": "SETTLED",
+                        "clearing_status": "FIRST_PRESENTMENT_COMPLETE",
+                        "maturity_date": "2023-12-02",
+                        "city": "Hawkinston",
+                        "alias": {
+                            "iban": "GB52LZIA19482218944138",
+                            "is_light": false,
+                            "display_name": "Ruben Rush",
+                            "avatar": {
+                                "uuid": "14bcdefa-f2ee-4ac0-9193-c76a3067cfb9",
+                                "image": [
+                                    {
+                                        "attachment_public_uuid": "1396b5f9-6e86-4d8f-bcf7-d829cfa36306",
+                                        "height": 525,
+                                        "width": 525,
+                                        "content_type": "image/jpeg",
+                                        "urls": [
+                                            {
+                                                "type": "ORIGINAL",
+                                                "url": "http://www.harrison-smith.com/"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "anchor_uuid": "af16c959-495b-4d66-97a1-11ae8595df0a",
+                                "style": "NONE"
+                            },
+                            "label_user": {
+                                "uuid": "65842f61-acb0-49e6-bc4a-719738b1740b",
+                                "display_name": "Kimberly James",
+                                "country": "NL",
+                                "avatar": {
+                                    "uuid": "47e81878-8f4a-4e93-9bc6-aeca022e4d9f",
+                                    "image": [
+                                        {
+                                            "attachment_public_uuid": "0094d4cc-549d-4c7e-985d-aeeb69388bed",
+                                            "height": 1024,
+                                            "width": 683,
+                                            "content_type": "image/jpeg",
+                                            "urls": [
+                                                {
+                                                    "type": "ORIGINAL",
+                                                    "url": "https://cox.com/"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "anchor_uuid": "88a11cac-baec-4005-9f9a-01bfe2e5540f",
+                                    "style": "NONE"
+                                },
+                                "public_nick_name": "Tina Anderson",
+                                "type": "PERSON"
+                            },
+                            "country": "NL"
+                        },
+                        "counterparty_alias": {
+                            "iban": "GB42OGPV29082096154082",
+                            "is_light": null,
+                            "display_name": "Jennifer Allen",
+                            "avatar": null,
+                            "label_user": {
+                                "uuid": "7e59c8eb-7f47-49f9-b258-0fdf4ebba3bd",
+                                "display_name": "Anne Ortiz",
+                                "country": "NL",
+                                "avatar": null,
+                                "public_nick_name": "John Anderson",
+                                "type": null
+                            },
+                            "country": "NL",
+                            "merchant_category_code": "5812"
+                        },
+                        "label_card": {
+                            "uuid": "d5d04892-0f67-49f2-b47e-9ac6e116b181",
+                            "type": "MAESTRO",
+                            "second_line": "Build available.",
+                            "expiry_date": "2025-10-31",
+                            "status": "ACTIVE",
+                            "label_user": {
+                                "uuid": "6c4a0c82-f2c3-4412-b8b1-d69e1cfcb7cd",
+                                "display_name": "Dakota Villarreal",
+                                "country": "NL",
+                                "avatar": {
+                                    "uuid": "8e9a7378-e345-4e4c-9d14-35a54c12bdf4",
+                                    "image": [
+                                        {
+                                            "attachment_public_uuid": "82b05a70-fbdf-4d27-b739-3f3b25a5446f",
+                                            "height": 1024,
+                                            "width": 683,
+                                            "content_type": "image/jpeg",
+                                            "urls": [
+                                                {
+                                                    "type": "ORIGINAL",
+                                                    "url": "http://madden.com/"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "anchor_uuid": "7d366dc2-785d-4057-a615-0c8e6f6d474b",
+                                    "style": "NONE"
+                                },
+                                "public_nick_name": "Judith Daniels",
+                                "type": "PERSON"
+                            }
+                        },
+                        "merchant_id": "22914612",
+                        "token_status": null,
+                        "reservation_expiry_time": null,
+                        "clearing_expiry_time": "2024-01-02 20:01:12.949270",
+                        "pan_entry_mode_user": "ICC",
+                        "secure_code_id": null,
+                        "wallet_provider_id": "216",
+                        "request_reference_split_the_bill": [
+                            {
+                                "event_id": 1392984134
+                            }
+                        ],
+                        "applied_limit": "CARD_LIMIT_POS_ICC",
+                        "pos_card_presence": "0",
+                        "pos_card_holder_presence": "0",
+                        "eligible_whitelist_id": null,
+                        "cashback_payout_item": null,
+                        "mastercard_action_report": null,
+                        "blacklist": null,
+                        "additional_authentication_status": "NONE",
+                        "pin_status": "NOT_PROVIDED"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,139 @@
+{
+    "NotificationUrl": {
+        "target_url": "http://matthews-knox.com/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_RESPONSE_CREATED",
+        "object": {
+            "RequestResponse": {
+                "id": 292417,
+                "created": "2023-12-02 09:51:25.743834",
+                "updated": "2023-12-03 05:47:25.668706",
+                "time_responded": null,
+                "time_expiry": null,
+                "monetary_account_id": 455369,
+                "amount_inquired": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "amount_responded": null,
+                "status": "PENDING",
+                "description": "Face community tough fight knowledge contain hotel story.",
+                "alias": {
+                    "iban": "GB20OFYI09122712279520",
+                    "is_light": false,
+                    "display_name": "Victoria Williams",
+                    "avatar": {
+                        "uuid": "a00a4a8e-9a6d-4f4c-bdbe-ec1ff49048f3",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "09068a2d-bbdb-4063-8b55-41e81d2c43d5",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.quinn.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "c8eb803a-3471-4168-8bec-644a9c12c692",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "7b35143e-361d-4d1d-9ea2-1d09aafe363d",
+                        "display_name": "Derek Wilson",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "27806263-256a-4b39-9708-6f7bf3ff67f0",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "b05e6690-f45b-4488-96dc-4d9cc05aaa51",
+                                    "height": 1024,
+                                    "width": 768,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://smith.net/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "1331e3ba-950f-41bd-81eb-6f18c9d99431",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Ryan Wilson",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "counterparty_alias": {
+                    "iban": "GB21ROVU69741048276182",
+                    "is_light": false,
+                    "display_name": "Susan Boyd",
+                    "avatar": {
+                        "uuid": "2e868253-9489-47db-bdc3-ba993109f0ac",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "a50e8c22-2a85-46d1-85ef-0e6f948d92ed",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://garcia-cole.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "ab382937-309e-4dd2-9e6d-750551e9ef4c",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "90455021-2c96-4da0-8ba2-c21cd822d2e5",
+                        "display_name": "Paul Turner",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "fe000752-ca42-4ef0-b537-1d3662aee8ea",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "b3e8a52f-1dd5-4c6a-af79-4151be6aebd0",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "https://www.vega-trevino.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "4d0028e6-032c-4025-a27c-b123298b5393",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Christie Drake",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": null,
+                "minimum_age": null,
+                "require_address": null,
+                "geolocation": null,
+                "type": "INTERNAL",
+                "sub_type": "NONE",
+                "redirect_url": null,
+                "address_billing": null,
+                "address_shipping": null,
+                "eligible_whitelist_id": null,
+                "request_reference_split_the_bill": [],
+                "event_id": 1392983750,
+                "monetary_account_preferred_id": 724925
+            }
+        }
+    }
+}

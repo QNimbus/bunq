@@ -6,7 +6,7 @@
             "title": "Rule that acts on a property",
             "properties": {
                 "type": {
-                    "title": "Rule type",
+                    "title": "Property rule type",
                     "enum": [
                         "REGEX",
                         "EQUALS",
@@ -129,6 +129,15 @@
             "type": "object",
             "title": "Rule that acts on balance",
             "properties": {
+                "type": {
+                    "title": "Balance rule type",
+                    "enum": [
+                        "BALANCE_DECREASED",
+                        "BALANCE_INCREASED",
+                        "BALANCE_INCREASED_BY",
+                        "BALANCE_DECREASED_BY"
+                    ]
+                },
                 "description": {
                     "type": "string"
                 },
@@ -142,14 +151,6 @@
                         "AT_MOST"
                     ],
                     "default": "EXACT"
-                },
-                "type": {
-                    "enum": [
-                        "BALANCE_DECREASED",
-                        "BALANCE_INCREASED",
-                        "BALANCE_INCREASED_BY",
-                        "BALANCE_DECREASED_BY"
-                    ]
                 }
             },
             "allOf": [
@@ -292,6 +293,21 @@
             ],
             "additionalProperties": false
         },
+        "ForwardRemainingBalanceActionData": {
+            "type": "object",
+            "properties": {
+                "forward_remaining_balance_to": {
+                    "$ref": "#/definitions/BankAccount"
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "forward_remaining_balance_to"
+            ],
+            "additionalProperties": false
+        },
         "EventType": {
             "type": "string",
             "enum": [
@@ -341,7 +357,9 @@
                     "type": {
                         "title": "Action Type",
                         "enum": [
+                            "DUMMY",
                             "REQUEST_FROM_PAYMENT",
+                            "FORWARD_REMAINING_BALANCE",
                             "FORWARD_INCOMING_PAYMENT",
                             "FORWARD_PAYMENT"
                         ]
@@ -354,14 +372,22 @@
                         }
                     },
                     "data": {
+                        "type": "object",
                         "oneOf": [
                             {
                                 "$ref": "#/definitions/CreateRequestActionData"
                             },
                             {
                                 "$ref": "#/definitions/ForwardPaymentActionData"
+                            },
+                            {
+                                "$ref": "#/definitions/ForwardRemainingBalanceActionData"
                             }
                         ]
+                    },
+                    "dry_run": {
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "allOf": [
@@ -377,6 +403,25 @@
                             "properties": {
                                 "data": {
                                     "$ref": "#/definitions/CreateRequestActionData"
+                                }
+                            },
+                            "required": [
+                                "data"
+                            ]
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "FORWARD_REMAINING_BALANCE"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/ForwardRemainingBalanceActionData"
                                 }
                             },
                             "required": [
@@ -420,6 +465,23 @@
                             "required": [
                                 "data"
                             ]
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": {
+                                "type": {
+                                    "const": "TEST_ACTION"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "data": {
+                                    "not": true
+                                }
+                            },
+                            "required": []
                         }
                     }
                 ],

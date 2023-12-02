@@ -164,7 +164,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
             None
         """
         bunq = BunqLib(self.is_production, config_file)
-        user = bunq.get_current_user()
+        user = bunq.user
 
         self.logger.info(f"Attempting to export all statements for user {user.display_name} ({user.id_})")
 
@@ -213,21 +213,21 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
     def show_user(self, config_file: str):
         bunq = BunqLib(self.is_production, config_file)
-        user = bunq.get_current_user()
+        user = bunq.user
 
         ShareLib.print_user(user)
 
     def show_accounts(self, config_file: str, include_inactive: bool = False):
         bunq = BunqLib(self.is_production, config_file)
-        user = bunq.get_current_user()
+        user = bunq.user
 
         self.logger.info(f"Attempting to show all accounts for user {user.display_name} ({user.id_})")
 
         accounts = bunq.get_all_accounts(only_active=(not include_inactive))
 
-        ShareLib.print_all_monetary_account_bank(accounts)
-
         self.logger.info(f"Found {len(accounts)} accounts")
+
+        ShareLib.print_all_monetary_account_bank(accounts)
 
     def create_config(self, config_file: str, api_key: str, overwrite: bool = False):
         """
@@ -266,7 +266,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         Removes all statements for all active accounts of the current user.
         """
         bunq = BunqLib(self.is_production, config_file)
-        user = bunq.get_current_user()
+        user = bunq.user
 
         self.logger.info(f"Attempting to remove all statements for user {user.display_name} ({user.id_})")
 

@@ -1,75 +1,103 @@
 [
     {
         "name": "Boodschappen",
-        "description": "Verkeerde rekening",
-        "condition": "ALL",
         "action": {
-            "events": [
-                "PAYMENT_CREATED",
-                "MUTATION_CREATED"
-            ],
-            "type": "CREATE_REQUEST_FROM_PAYMENT",
+            "type": "REQUEST_FROM_PAYMENT",
             "data": {
+                "description": "Correctie: Boodschappen",
+                "ignore_own_accounts": true,
                 "request_from": {
                     "name": "Boodschappen",
                     "iban": "NL12ABNA000123456"
-                },
-                "description": "Correctie: Boodschappen",
-                "append_original_description": true
-            }
+                }
+            },
+            "events": [
+                "PAYMENT_CREATED",
+                "MUTATION_CREATED"
+            ]
         },
-        "rules": [
-            {
-                "type": "EQUALS",
-                "value": "EUR",
-                "property": "amount.currency",
-                "description": "Payment currency must be EUR"
-            },
-            {
-                "type": "IS_NEGATIVE",
-                "property": "amount.value",
-                "description": "Payment amount must be negative"
-            },
-            {
-                "type": "DOES_NOT_CONTAIN",
-                "value": [
-                    "NL12ABNA000123456"
-                ],
-                "property": "alias.iban",
-                "description": "Payment must not be from the 'Boodschappen' account"
-            },
-            {
-                "condition": "ANY",
-                "rules": [
-                    {
-                        "type": "CONTAINS",
-                        "value": [
-                            "Albert Heijn",
-                            "Lidl",
-                            "Jumbo",
-                            "Bakkerij",
-                            "Kruidvat",
-                            "Kaashandel",
-                            "Thuisbezorgd.nl",
-                            "Coop",
-                            "Aldi",
-                            "Sligro",
-                            "Spar",
-                            "Plus"
-                        ],
-                        "property": "counterparty_alias.display_name",
-                        "description": "Payment must be from a grocery store"
-                    },
-                    {
-                        "type": "CONTAINS",
-                        "value": [
-                            "bunq-test"
-                        ],
-                        "property": "description",
-                        "description": "Description contains the word 'bunq-test'"
-                    }
-                ]
-            }
-        ]
+        "rule": {
+            "condition": "ANY",
+            "rules": [
+                {
+                    "description": "Boodschappen betaald van verkeerde rekening",
+                    "condition": "ALL",
+                    "rules": [
+                        {
+                            "description": "Valuta moet EUR zijn.",
+                            "property": "amount.currency",
+                            "type": "EQUALS",
+                            "value": "EUR"
+                        },
+                        {
+                            "description": "Bedrag moet negatief zijn.",
+                            "property": "amount.value",
+                            "type": "IS_NEGATIVE"
+                        },
+                        {
+                            "description": "Betaling moet niet gedaan zijn van 'Boodschappen' rekening.",
+                            "property": "alias.iban",
+                            "type": "DOES_NOT_CONTAIN",
+                            "value": [
+                                "NL12ABNA000123456"
+                            ]
+                        },
+                        {
+                            "description": "Betaling moet zijn gedaan aan een boodschappen winkel",
+                            "property": "counterparty_alias.display_name",
+                            "type": "CONTAINS",
+                            "value": [
+                                "Albert Heijn",
+                                "Lidl",
+                                "Jumbo",
+                                "Bakkerij",
+                                "Kruidvat",
+                                "Kaashandel",
+                                "Thuisbezorgd.nl",
+                                "Coop",
+                                "Aldi",
+                                "Sligro",
+                                "Spar",
+                                "Plus"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "description": "TEST: Boodschappen betaald van verkeerde rekening.",
+                    "condition": "ALL",
+                    "rules": [
+                        {
+                            "description": "Valuta moet EUR zijn.",
+                            "property": "amount.currency",
+                            "type": "EQUALS",
+                            "value": "EUR"
+                        },
+                        {
+                            "description": "Bedrag moet negatief zijn.",
+                            "property": "amount.value",
+                            "type": "IS_NEGATIVE"
+                        },
+                        {
+                            "description": "Betaling gedaan door mijzelf.",
+                            "property": "alias.display_name",
+                            "type": "EQUALS",
+                            "value": [
+                                "Mijn Naam",
+                                "M. Naam"
+                            ],
+                            "case_sensitive": false
+                        },
+                        {
+                            "description": "Description veld bevat de tekst 'Boodschappen Test'.",
+                            "property": "description",
+                            "type": "CONTAINS",
+                            "value": "Boodschappen Test",
+                            "case_sensitive": true
+                        }
+                    ]
+                }
+            ]
+        }
     }
 ]

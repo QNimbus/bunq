@@ -1,0 +1,147 @@
+{
+    "NotificationUrl": {
+        "target_url": "http://evans.com/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_RESPONSE_ACCEPTED",
+        "object": {
+            "RequestResponse": {
+                "id": 651635,
+                "created": "2023-12-03 03:11:23.873674",
+                "updated": "2023-12-03 15:54:20.903374",
+                "time_responded": "2023-12-03 15:03:42.889167",
+                "time_expiry": null,
+                "monetary_account_id": 242721,
+                "amount_inquired": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "amount_responded": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "status": "ACCEPTED",
+                "description": "Above mention ok. Pretty agent decade energy. Book second individual.",
+                "alias": {
+                    "iban": "GB69IXOD64658828056664",
+                    "is_light": false,
+                    "display_name": "Heather Green",
+                    "avatar": {
+                        "uuid": "afc45dd0-5f7e-41da-9861-ebd127a79f69",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "6ec6b6e5-510e-4e00-b2d6-096e375f5164",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "https://www.barker-lewis.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "27bad2d7-4f9f-44f8-96fd-f79718f727eb",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "9226143d-84bd-49b1-99bf-11fa27773a62",
+                        "display_name": "Shirley Ramos",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "13127d45-1edd-4d16-8229-8673ec3a13ff",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "98f80f9b-9a40-4ac9-8eab-f7c2b3135e82",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://mooney-bryant.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "086639fc-c113-4ecd-8a4e-425da5a712eb",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Lisa Clark",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "counterparty_alias": {
+                    "iban": "GB60JGRB74538286371280",
+                    "is_light": false,
+                    "display_name": "Meagan Snow",
+                    "avatar": {
+                        "uuid": "fc6e4c0f-436e-496f-b7ca-3310ff378532",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "909d8d3b-6908-4781-a0f0-22b53876cfa8",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.thompson.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "2001e3c7-60c7-4e1f-a6a2-402d0077ac9e",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "d5170df0-384e-4ca0-815d-fbf301fc42f9",
+                        "display_name": "Ryan Rogers",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "a83b9700-cce2-461a-a974-8bf72bc1fd92",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "2b601a5f-f2af-4342-80a2-7cdc61510e45",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "https://henson.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "8d134827-9096-43f5-9b64-5ff07001683d",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Joseph Hahn",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": null,
+                "minimum_age": null,
+                "require_address": null,
+                "geolocation": {
+                    "latitude": -3.575501,
+                    "longitude": 121.187578,
+                    "altitude": 49.58766697473194,
+                    "radius": 11.543
+                },
+                "type": "INTERNAL",
+                "sub_type": "NONE",
+                "redirect_url": null,
+                "address_billing": null,
+                "address_shipping": null,
+                "eligible_whitelist_id": null,
+                "request_reference_split_the_bill": [],
+                "event_id": 1392984278,
+                "monetary_account_preferred_id": 724925
+            }
+        }
+    }
+}

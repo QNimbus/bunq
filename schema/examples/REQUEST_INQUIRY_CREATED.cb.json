@@ -1,0 +1,144 @@
+{
+    "NotificationUrl": {
+        "target_url": "https://terry.com/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_INQUIRY_CREATED",
+        "object": {
+            "RequestInquiry": {
+                "id": 347585,
+                "created": "2023-12-01 03:04:38.844542",
+                "updated": "2023-12-03 04:53:47.111938",
+                "time_responded": null,
+                "time_expiry": null,
+                "monetary_account_id": 470013,
+                "amount_inquired": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "amount_responded": null,
+                "status": "PENDING",
+                "description": "Animal through price difference finish. Generation test foreign past read.",
+                "merchant_reference": null,
+                "user_alias_created": {
+                    "iban": "GB17GVLI29898918711030",
+                    "is_light": false,
+                    "display_name": "Mackenzie Richmond",
+                    "avatar": {
+                        "uuid": "e4acb163-81cb-4b13-87ba-4df0b8df9d77",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "41191d28-9c33-4b52-9062-23438cd16eca",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.robertson.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "b415434b-0cce-4a23-9a6b-909bc8c4d2f0",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "1f7199a9-dee9-4619-b282-8b9c92416449",
+                        "display_name": "Carrie Brown",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "d5031448-64f7-45f4-92e4-c0b71496eef5",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "4aa1d8f1-2b73-414e-aa96-81b0a7a7879b",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://www.kelley.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "a0aa2476-2b2b-4d0b-a8c2-f65333c71d7f",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Joshua York",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "user_alias_revoked": null,
+                "counterparty_alias": {
+                    "iban": "GB13TUDC30348630072547",
+                    "is_light": false,
+                    "display_name": "Michael Neal",
+                    "avatar": {
+                        "uuid": "cdd9165f-f71a-46c8-9ace-b651eba538e6",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "7b3d1290-c527-452f-844c-f5b1e7634462",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://griffin.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "5bc30726-c7bc-4228-ad1c-e8b9615f2a23",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "51a135ca-367d-4796-840f-bc82e2da4a55",
+                        "display_name": "Andres Reese",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "8a8dfc91-2010-4528-a56a-bbe206ed022d",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "a58157d9-d8d2-47fc-8167-10443af2c9f2",
+                                    "height": 1024,
+                                    "width": 768,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://www.lee-rose.biz/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "9dafc298-66d5-4b27-ac51-b0511b390953",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Randy Green",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": [],
+                "minimum_age": null,
+                "require_address": null,
+                "geolocation": {
+                    "latitude": 69.944463,
+                    "longitude": 65.261403,
+                    "altitude": 71.19598809751258,
+                    "radius": 11.543
+                },
+                "bunqme_share_url": null,
+                "redirect_url": null,
+                "reference_split_the_bill": null,
+                "batch_id": null,
+                "scheduled_id": null,
+                "address_billing": null,
+                "address_shipping": null
+            }
+        }
+    }
+}

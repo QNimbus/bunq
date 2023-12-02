@@ -2,9 +2,10 @@
 
 # Standard library imports
 import os
+import json
 from enum import Enum
+from typing import Union
 from dataclasses import dataclass
-from typing import Union, List, Dict
 
 # Third-party imports
 from bunq import ApiEnvironmentType, Pagination
@@ -28,6 +29,7 @@ from bunq.sdk.model.generated.endpoint import (
 
 # Local application/library imports
 from libs.log import setup_logger
+from libs.redis_wrapper import redis_memoize, JsonSerializer
 from libs.exceptions import (
     StatementNotFoundError,
     ExportError,
@@ -35,7 +37,60 @@ from libs.exceptions import (
     StatementsRetrievalError,
 )
 
+# Constants
+REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24 # 24 hours
+
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
+
+def custom_serializer(obj):
+    """
+    Custom serializer function for JSON serialization.
+
+    Args:
+        obj: The object to be serialized.
+
+    Returns:
+        The serialized JSON representation of the object.
+
+    Raises:
+        TypeError: If the object is not of type MonetaryAccountBank, MonetaryAccountJoint or MonetaryAccountSavings.
+    """
+    if isinstance(obj, (MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings)):
+        return obj.to_json()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+
+class MonetaryAccountSerializer(JsonSerializer):
+    """
+    A class that implements the JsonSerializer interface for the MonetaryAccountBank class.
+    """
+
+    @classmethod
+    def serialize(cls, obj: list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]) -> str:
+        """
+        Serialize an array of MonetaryAccountBank, MonetaryAccountJoint or MonetaryAccountSavings objects to a JSON string.
+
+        Args:
+            obj (list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]): The array of objects to serialize.
+
+        Returns:
+            str: The JSON string representation of the serialized array.
+        """
+        return json.dumps(obj, default=custom_serializer)
+    
+    @classmethod
+    def deserialize(cls, json_string: str) -> list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]:
+        """
+        Deserialize a JSON string to an array of MonetaryAccountBank, MonetaryAccountJoint or MonetaryAccountSavings objects.
+
+        Args:
+            json_string (str): The JSON string to deserialize.
+
+        Returns:
+            list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]: The deserialized array of objects.
+        """
+        parsed_data = json.loads(json_string)
+        return [MonetaryAccountBank.from_json(item) for item in parsed_data]
 
 @dataclass
 class CounterParty:
@@ -138,7 +193,7 @@ class BunqLib:
             production_mode (bool, optional): Whether to use the production environment or the sandbox environment. Defaults to False.
             config_file (str, optional): The path to the configuration file to use. Defaults to None.
         """
-        self.user = None
+        self._user = None
         self.config_file = config_file if config_file else self.determine_bunq_conf_filename()
         self.env = ApiEnvironmentType.PRODUCTION if production_mode else ApiEnvironmentType.SANDBOX
 
@@ -151,21 +206,10 @@ class BunqLib:
             # don't attempt to compare against unrelated types
             return NotImplemented
 
-        return self.user._id == self.user._id
+        return self._user._id == self._user._id
 
-    def __str__(self):
-        return self.user.to_json()
-
-    def __hash__(self):
-        return hash(self.user.to_json())
-    
-    def to_dict(self):
-        return {
-            "config_file": self.config_file,
-            "env": self.env,
-            "api_context": self.api_context,
-            "user": self.user,
-        }
+    def __repr__(self):
+        return f"BunqLib(user_id={self._user.id_})"
 
     def setup_context(self) -> None:
         """
@@ -185,6 +229,7 @@ class BunqLib:
         BunqContext.load_api_context(api_context)
 
         self.api_context = BunqContext.api_context()
+        return self.api_context
 
     def setup_current_user(self) -> None:
         """
@@ -197,7 +242,7 @@ class BunqLib:
         """
         user = User.get().value.get_referenced_object()
         if isinstance(user, (UserPerson, UserCompany, UserLight)):
-            self.user = user
+            self._user = user
 
     def update_context(self) -> None:
         """
@@ -220,13 +265,8 @@ class BunqLib:
 
         return self._BUNQ_CONF_SANDBOX
 
-    def get_current_user(self) -> Union[UserCompany, UserPerson]:
-        """
-        Returns the current user, which can be either a UserCompany or UserPerson object.
-        """
-        return self.user
-
-    def get_all_accounts_bank(self, only_active: bool = False) -> List[MonetaryAccountBank]:
+    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    def get_all_accounts_bank(self, only_active: bool = False) -> list[MonetaryAccountBank]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -238,7 +278,7 @@ class BunqLib:
         accounts = MonetaryAccountBank.list(pagination.url_params_count_only).value
 
         if only_active:
-            accounts_active: List[MonetaryAccountBank] = []
+            accounts_active: list[MonetaryAccountBank] = []
 
             for account in accounts:
                 if account.status == self._MONETARY_ACCOUNT_STATUS_ACTIVE:
@@ -248,7 +288,8 @@ class BunqLib:
 
         return accounts
 
-    def get_all_accounts_joint(self, only_active: bool = False) -> List[MonetaryAccountJoint]:
+    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    def get_all_accounts_joint(self, only_active: bool = False) -> list[MonetaryAccountJoint]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -260,7 +301,7 @@ class BunqLib:
         accounts = MonetaryAccountJoint.list(pagination.url_params_count_only).value
 
         if only_active:
-            accounts_active: List[MonetaryAccountJoint] = []
+            accounts_active: list[MonetaryAccountJoint] = []
 
             for account in accounts:
                 if account.status == self._MONETARY_ACCOUNT_STATUS_ACTIVE:
@@ -270,7 +311,8 @@ class BunqLib:
 
         return accounts
 
-    def get_all_accounts_savings(self, only_active: bool = False) -> List[MonetaryAccountSavings]:
+    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    def get_all_accounts_savings(self, only_active: bool = False) -> list[MonetaryAccountSavings]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -282,7 +324,7 @@ class BunqLib:
         accounts = MonetaryAccountSavings.list(pagination.url_params_count_only).value
 
         if only_active:
-            accounts_active: List[MonetaryAccountSavings] = []
+            accounts_active: list[MonetaryAccountSavings] = []
 
             for account in accounts:
                 if account.status == self._MONETARY_ACCOUNT_STATUS_ACTIVE:
@@ -294,7 +336,7 @@ class BunqLib:
 
     def get_all_accounts(
         self, only_active: bool = False
-    ) -> List[Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings,]]:
+    ) -> list[Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings,]]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -453,7 +495,7 @@ class BunqLib:
     def get_all_statements(
         self,
         account: MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings,
-    ) -> Dict[str, List[ExportStatement]]:
+    ) -> dict[str, list[ExportStatement]]:
         """
         Retrieve all statements for a given account.
 
@@ -461,12 +503,12 @@ class BunqLib:
             account (MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings): The account to retrieve statements for.
 
         Returns:
-            Dict[str, List[ExportStatement]]: A dictionary containing the statements for the given account, with the account ID as the key.
+            dict[str, list[ExportStatement]]: A dictionary containing the statements for the given account, with the account ID as the key.
         """
         self.setup_context()
 
         try:
-            statements: List[ExportStatement] = list(ExportStatement.list(account.id_).value)
+            statements: list[ExportStatement] = list(ExportStatement.list(account.id_).value)
         except Exception as exc:
             raise StatementsRetrievalError(f"An error occurred while retrieving statements for account '{account.description}' ({account.id_}): {exc}") from exc
 
@@ -492,3 +534,17 @@ class BunqLib:
 
         for statement in statements:
             self.delete_statement(statement.id_, account.id_)
+
+    @property
+    def user(self) -> Union[UserCompany, UserPerson]:
+        """
+        Returns the current user, which can be either a UserCompany or UserPerson object.
+        """
+        return self._user
+
+    @property
+    def user_id(self) -> int:
+        """
+        Returns the ID of the current user.
+        """
+        return self._user.id_

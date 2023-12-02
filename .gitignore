@@ -1,6 +1,7 @@
 # Bunq config files
 .bunq*
 *.rules.json
+*.rules.json.*
 
 *.bak
 *.old

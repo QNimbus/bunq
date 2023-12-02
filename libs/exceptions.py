@@ -10,6 +10,44 @@
 # ...
 
 
+class RedisMemoizeError(Exception):
+    """
+    Exception raised for errors related to Redis memoization.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message.strip()
+        super().__init__(self.message)
+
+
+class RedisMemoizeRuntimeError(Exception):
+    """
+    Exception raised for errors related to Redis memoization during runtime.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message.strip()
+        super().__init__(self.message)
+
+
+class SecurityError(Exception):
+    """Exception raised for security breaches such as data tampering.
+
+    Attributes:
+        message (str): Explanation of the security breach.
+    """
+
+    def __init__(self, message: str):
+        self.message = message.strip()
+        super().__init__(self.message)
+
+
 class InvalidLogLevelError(Exception):
     """
     Raised when the provided log level is not a valid log level recognized by the logging module.

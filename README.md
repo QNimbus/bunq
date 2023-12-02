@@ -32,6 +32,14 @@ Using docker compose (when stack _is_ running)
 Using Docker compose:
 `docker compose up -d`
 
+### Flush Redis database
+
+Using Docker compose:
+`docker compose -f docker-compose.yaml exec -it -e PYTHONPATH=/app bunq python /app/libs/redis_wrapper.py flushdb`
+
+Or inside the container:
+`libs/redis_wrapper.py flushdb`
+
 ## Development
 
 ### Rules model

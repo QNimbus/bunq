@@ -1,0 +1,147 @@
+{
+    "NotificationUrl": {
+        "target_url": "http://www.williams.com/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_INQUIRY_ACCEPTED",
+        "object": {
+            "RequestInquiry": {
+                "id": 994589,
+                "created": "2023-12-02 23:07:17.138064",
+                "updated": "2023-12-03 17:07:43.430818",
+                "time_responded": "2023-12-03 15:03:42.846626",
+                "time_expiry": null,
+                "monetary_account_id": 251604,
+                "amount_inquired": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "amount_responded": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "status": "ACCEPTED",
+                "description": "Character building mention relationship.",
+                "merchant_reference": null,
+                "user_alias_created": {
+                    "iban": "GB57UPSJ47512836280289",
+                    "is_light": false,
+                    "display_name": "Jessica Hanna",
+                    "avatar": {
+                        "uuid": "a6346f0c-456d-4cf3-a95e-a1891aaa7931",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "590400b1-404e-4615-b604-e4d66a15d920",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.flynn.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "31f265ac-fd24-4ef8-af45-7d2d230d5955",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "80ef0e30-bf04-46af-a9e6-16034a9b19f3",
+                        "display_name": "Taylor Haynes",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "786fae12-ba5a-4423-8347-71c56810ea3c",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "b838681f-409a-4725-a566-b619a05db276",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "https://www.perry-davis.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "7a9397e2-b7d6-4b54-92d3-02d2ed218e60",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Mark Atkins",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "user_alias_revoked": null,
+                "counterparty_alias": {
+                    "iban": "GB56KJBV55968616058722",
+                    "is_light": false,
+                    "display_name": "Clayton Cunningham MD",
+                    "avatar": {
+                        "uuid": "36586b8e-9183-483c-86d6-4ce26c96e115",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "66779834-3d27-4494-bac1-d5ef5d0fb87b",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "https://clements.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "5974e8af-8ae5-4e72-8ac5-c21f9b95b062",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "f70a5f06-827b-4b93-8e65-52ca685f8670",
+                        "display_name": "Becky Miller",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "fefbb232-d0c7-4055-b2c2-1db7d81bd4a2",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "cb96535c-8ee7-411e-ac98-e587ecd70410",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://www.howe-rodriguez.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "9941e335-6e50-4c89-b785-86537c37e806",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Adrian Wells",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": [],
+                "minimum_age": null,
+                "require_address": null,
+                "geolocation": {
+                    "latitude": 20.627195,
+                    "longitude": -127.946964,
+                    "altitude": 81.93473646941798,
+                    "radius": 11.543
+                },
+                "bunqme_share_url": null,
+                "redirect_url": null,
+                "reference_split_the_bill": null,
+                "batch_id": null,
+                "scheduled_id": null,
+                "address_billing": null,
+                "address_shipping": null
+            }
+        }
+    }
+}

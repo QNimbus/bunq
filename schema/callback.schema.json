@@ -46,6 +46,30 @@
                 },
                 {
                     "type": "object",
+                    "title": "Invoice",
+                    "properties": {
+                        "Invoice": {
+                            "$ref": "#/definitions/InvoiceType"
+                        }
+                    },
+                    "required": [
+                        "Invoice"
+                    ]
+                },
+                {
+                    "type": "object",
+                    "title": "RequestInquiryBatch",
+                    "properties": {
+                        "RequestInquiryBatch": {
+                            "$ref": "#/definitions/RequestInquiryBatchType"
+                        }
+                    },
+                    "required": [
+                        "RequestInquiryBatch"
+                    ]
+                },
+                {
+                    "type": "object",
                     "title": "RequestInquiry",
                     "properties": {
                         "RequestInquiry": {
@@ -152,10 +176,7 @@
                     "type": "string"
                 },
                 "request_reference_split_the_bill": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "array"
                 },
                 "balance_after_mutation": {
                     "$ref": "#/definitions/AmountType"
@@ -188,6 +209,143 @@
                 "balance_after_mutation",
                 "payment_auto_allocate_instance"
             ]
+        },
+        "InvoiceType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "created": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "updated": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "invoice_date": {
+                    "type": "string"
+                },
+                "invoice_number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "group": {
+                    "type": "array"
+                },
+                "total_vat_exclusive": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "total_vat_inclusive": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "total_vat": {
+                    "$ref": "#/definitions/AmountType"
+                },
+                "alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "counterparty_alias": {
+                    "$ref": "#/definitions/aliasOrCounterpartyAlias"
+                },
+                "address": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/definitions/AddressType"
+                        }
+                    ]
+                },
+                "counterparty_address": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/definitions/AddressType"
+                        }
+                    ]
+                },
+                "chamber_of_commerce_number": {
+                    "type": "string"
+                },
+                "vat_number": {
+                    "type": "string"
+                },
+                "request_reference_split_the_bill": {
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id",
+                "created",
+                "updated",
+                "invoice_date",
+                "invoice_number",
+                "status",
+                "category",
+                "group",
+                "total_vat_inclusive",
+                "total_vat_exclusive",
+                "total_vat",
+                "alias",
+                "address",
+                "counterparty_alias",
+                "counterparty_address",
+                "chamber_of_commerce_number",
+                "vat_number",
+                "request_reference_split_the_bill"
+            ]
+        },
+        "AddressType": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "street": {
+                    "type": "string"
+                },
+                "house_number": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "province": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "extra": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "mailbox_name": {
+                    "type": [
+                        "null",
+                        "string"
+                    ]
+                },
+                "is_user_address_updated": {
+                    "type": "boolean"
+                }
+            },
+            "required": [],
+            "title": "AddressType"
         },
         "PaymentAutoAllocateInstance": {
             "type": "object",
@@ -243,6 +401,43 @@
                 "updated"
             ],
             "title": "PaymentAutoAllocateInstanceClass"
+        },
+        "RequestInquiryBatchType": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "created": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "updated": {
+                    "$ref": "#/definitions/DateTimeType"
+                },
+                "request_inquiries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RequestInquiryType"
+                    }
+                },
+                "reference_split_the_bill": {
+                    "type": [
+                        "null",
+                        "object"
+                    ]
+                },
+                "total_amount_inquired": {
+                    "$ref": "#/definitions/AmountType"
+                }
+            },
+            "required": [
+                "id",
+                "created",
+                "updated",
+                "request_inquiries",
+                "reference_split_the_bill",
+                "total_amount_inquired"
+            ]
         },
         "RequestInquiryType": {
             "type": "object",
@@ -340,7 +535,7 @@
                 "reference_split_the_bill": {
                     "type": [
                         "null",
-                        "string"
+                        "object"
                     ]
                 },
                 "batch_id": {
@@ -690,9 +885,13 @@
                     ]
                 },
                 "cashback_payout_item": {
-                    "type": [
-                        "null",
-                        "string"
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/definitions/CashbackPayoutItemType"
+                        }
                     ]
                 },
                 "mastercard_action_report": {
@@ -720,6 +919,43 @@
                 "updated",
                 "monetary_account_id"
             ]
+        },
+        "CashbackPayoutItemType": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "CashbackPayoutItem": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer"
+                        },
+                        "created": {
+                            "$ref": "#/definitions/DateTimeType"
+                        },
+                        "updated": {
+                            "$ref": "#/definitions/DateTimeType"
+                        },
+                        "amount": {
+                            "$ref": "#/definitions/AmountType"
+                        },
+                        "statuss": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "id",
+                        "created",
+                        "updated",
+                        "amount",
+                        "statuss"
+                    ]
+                }
+            },
+            "required": [
+                "CashbackPayoutItem"
+            ],
+            "title": "CashbackPayoutItem"
         },
         "GeolocationType": {
             "geolocation": {
@@ -819,7 +1055,9 @@
                 "REQUEST_INQUIRY_REJECTED",
                 "REQUEST_RESPONSE_CREATED",
                 "REQUEST_RESPONSE_ACCEPTED",
-                "REQUEST_RESPONSE_REJECTED"
+                "REQUEST_RESPONSE_REJECTED",
+                "REQUEST_INQUIRY_BATCH_CREATED",
+                "BILLING_INVOICE_SETTLED"
             ]
         },
         "ImageType": {

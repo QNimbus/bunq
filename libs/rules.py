@@ -14,7 +14,7 @@ from jsonschema.exceptions import ValidationError
 # Local application/library imports
 from libs.log import setup_logger
 from libs.exceptions import RuleProcessingError
-from schema.rules_model import Action, RuleType, RuleCondition, Rules, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
+from schema.rules_model import Action, PropertyRuleType, BalanceRuleType, RuleCondition, Rules, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
 from schema.callback_model import (
     EventType,
     PaymentType,
@@ -85,29 +85,36 @@ def check_rule(
         RuleProcessingError: If an error occurs during rule processing.
     """
     try:
-        rule_type = rule.type
-        rule_value = rule.value
-        rule_case_sensitive = rule.case_sensitive
-        property_value = get_nested_property(data.model_dump(), rule.property)
+        if isinstance(rule, RuleThatActsOnAProperty):
+            rule_type = rule.type
+            rule_value = rule.value
+            rule_case_sensitive = rule.case_sensitive
+            property_value = get_nested_property(data.model_dump(), rule.property)
 
-        # Convert rule value to lowercase if rule is not case sensitive
-        if isinstance(property_value, str):
-            if not rule_case_sensitive:
-                property_value = property_value.strip().lower()
-            else:
-                property_value = property_value.strip()
+            # Convert rule value to lowercase if rule is not case sensitive
+            if isinstance(property_value, str):
+                if not rule_case_sensitive:
+                    property_value = property_value.strip().lower()
+                else:
+                    property_value = property_value.strip()
 
-        if isinstance(rule_value, str):
-            if not rule_case_sensitive:
-                rule_value = rule_value.strip().lower()
-            else:
-                rule_value = rule_value.strip()
+            if isinstance(rule_value, str):
+                if not rule_case_sensitive:
+                    rule_value = rule_value.strip().lower()
+                else:
+                    rule_value = rule_value.strip()
 
-        if isinstance(rule_value, list) and all(isinstance(item, str) for item in rule_value):
-            if not rule_case_sensitive:
-                rule_value = [item.strip().lower() for item in rule_value]
-            else:
-                rule_value = [item.strip() for item in rule_value]
+            if isinstance(rule_value, list) and all(isinstance(item, str) for item in rule_value):
+                if not rule_case_sensitive:
+                    rule_value = [item.strip().lower() for item in rule_value]
+                else:
+                    rule_value = [item.strip() for item in rule_value]
+
+        elif isinstance(rule, RuleThatActsOnBalance):
+            rule_type = rule.type
+            rule_value = float(rule.value) if hasattr(rule, "value") and rule.value is not None else None
+        else:
+            raise ValueError(f"Unknown rule type: {rule}")
 
         def regex_match():
             return re.fullmatch(rule_value, property_value or "") is not None
@@ -164,16 +171,30 @@ def check_rule(
                 return all(v != property_value for v in value)
             return False
 
+        def balance_decreased(by: float = 0):
+            same_currency = data.amount.currency == data.balance_after_mutation.currency
+            balance_before_mutation = float(data.balance_after_mutation.value) - float(data.amount.value)
+            return same_currency and float(data.balance_after_mutation.value) < (balance_before_mutation - by)
+
+        def balance_increased(by: float = 0):
+            same_currency = data.amount.currency == data.balance_after_mutation.currency
+            balance_before_mutation = float(data.balance_after_mutation.value) - float(data.amount.value)
+            return same_currency and float(data.balance_after_mutation.value) > (balance_before_mutation + by)
+
         rule_checks = {
-            RuleType.REGEX: regex_match,
-            RuleType.IS_EMPTY: is_empty,
-            RuleType.IS_NOT_EMPTY: is_not_empty,
-            RuleType.IS_NEGATIVE: is_negative,
-            RuleType.IS_POSITIVE: is_positive,
-            RuleType.CONTAINS: contains,
-            RuleType.DOES_NOT_CONTAIN: does_not_contain,
-            RuleType.EQUALS: equals,
-            RuleType.DOES_NOT_EQUAL: does_not_equal,
+            PropertyRuleType.REGEX: regex_match,
+            PropertyRuleType.IS_EMPTY: is_empty,
+            PropertyRuleType.IS_NOT_EMPTY: is_not_empty,
+            PropertyRuleType.IS_NEGATIVE: is_negative,
+            PropertyRuleType.IS_POSITIVE: is_positive,
+            PropertyRuleType.CONTAINS: contains,
+            PropertyRuleType.DOES_NOT_CONTAIN: does_not_contain,
+            PropertyRuleType.EQUALS: equals,
+            PropertyRuleType.DOES_NOT_EQUAL: does_not_equal,
+            BalanceRuleType.BALANCE_DECREASED: balance_decreased,
+            BalanceRuleType.BALANCE_INCREASED: balance_increased,
+            BalanceRuleType.BALANCE_DECREASED_BY: lambda: balance_decreased(by=rule_value),
+            BalanceRuleType.BALANCE_INCREASED_BY: lambda: balance_increased(by=rule_value),
         }
 
         return rule_checks[rule_type]()

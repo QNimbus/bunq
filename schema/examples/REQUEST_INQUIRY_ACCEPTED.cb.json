@@ -1,0 +1,147 @@
+{
+    "NotificationUrl": {
+        "target_url": "https://www.hubbard.com/",
+        "category": "REQUEST",
+        "event_type": "REQUEST_INQUIRY_ACCEPTED",
+        "object": {
+            "RequestInquiry": {
+                "id": 712859,
+                "created": "2023-12-01 15:05:55.290320",
+                "updated": "2023-12-04 09:54:16.498162",
+                "time_responded": "2023-12-03 15:03:42.846626",
+                "time_expiry": null,
+                "monetary_account_id": 698363,
+                "amount_inquired": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "amount_responded": {
+                    "currency": "EUR",
+                    "value": "36.70"
+                },
+                "status": "ACCEPTED",
+                "description": "Itself front office. Security whole significant unit task stand.",
+                "merchant_reference": null,
+                "user_alias_created": {
+                    "iban": "GB84WTHE81388328867422",
+                    "is_light": false,
+                    "display_name": "Emily Johns",
+                    "avatar": {
+                        "uuid": "3bcf9fa7-446c-4023-b6d0-8d57d630666b",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "9168222a-d10e-48cf-897d-5df510fa5f5a",
+                                "height": 525,
+                                "width": 525,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://mathews-smith.com/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "546cb534-267b-415b-b570-e4068e87ffa7",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "94029d2e-e525-4322-8810-b98d5fa254fd",
+                        "display_name": "Melanie Mayer",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "83c9c64c-8ecc-46d5-8676-6308b0f96bd6",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "e1134b1a-cd2a-4c68-af37-31a87a85db64",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "https://www.miller.com/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "fb00fbb9-fba6-4219-8699-c77523744f42",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Michael Wells",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "user_alias_revoked": null,
+                "counterparty_alias": {
+                    "iban": "GB05ITFV02138783571270",
+                    "is_light": false,
+                    "display_name": "Stephen Smith",
+                    "avatar": {
+                        "uuid": "15bda716-6f36-4ad4-8c37-c366e208fd3c",
+                        "image": [
+                            {
+                                "attachment_public_uuid": "2844afa9-a5e1-4b51-84f5-1165a770f449",
+                                "height": 420,
+                                "width": 420,
+                                "content_type": "image/jpeg",
+                                "urls": [
+                                    {
+                                        "type": "ORIGINAL",
+                                        "url": "http://www.craig-powell.biz/"
+                                    }
+                                ]
+                            }
+                        ],
+                        "anchor_uuid": "5df4fc77-e2d9-458e-86a9-a31358c2b017",
+                        "style": "NONE"
+                    },
+                    "label_user": {
+                        "uuid": "1c10288e-3e98-4d5d-a877-fd000e01b2a9",
+                        "display_name": "Chelsea Rivas",
+                        "country": "NL",
+                        "avatar": {
+                            "uuid": "07399115-b9ff-4047-9503-df680dc41f71",
+                            "image": [
+                                {
+                                    "attachment_public_uuid": "b64c49c6-8764-4a1e-816f-886408218264",
+                                    "height": 1024,
+                                    "width": 683,
+                                    "content_type": "image/jpeg",
+                                    "urls": [
+                                        {
+                                            "type": "ORIGINAL",
+                                            "url": "http://anderson.net/"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "anchor_uuid": "10601a2b-b342-4cc6-a6ce-ea8e64ef05e6",
+                            "style": "NONE"
+                        },
+                        "public_nick_name": "Ryan Jones",
+                        "type": "PERSON"
+                    },
+                    "country": "NL"
+                },
+                "attachment": [],
+                "minimum_age": null,
+                "require_address": null,
+                "geolocation": {
+                    "latitude": 36.098396,
+                    "longitude": -91.7169,
+                    "altitude": 98.26192652166917,
+                    "radius": 11.543
+                },
+                "bunqme_share_url": null,
+                "redirect_url": null,
+                "reference_split_the_bill": null,
+                "batch_id": null,
+                "scheduled_id": null,
+                "address_billing": null,
+                "address_shipping": null
+            }
+        }
+    }
+}
