@@ -8,7 +8,7 @@ from typing import Callable, Any
 # Local application/library imports
 from flask import Flask, Response
 from werkzeug.wrappers import Request
-from libs.log import setup_logger, setup_logger_with_rotating_file_handler
+from libs.logger import setup_logger, setup_logger_with_rotating_file_handler
 from libs.exceptions import InvalidIPAddressError
 
 # Setup logging
@@ -129,6 +129,7 @@ class AllowedIPsMiddleware:  # pylint: disable=too-few-public-methods
 
         except ipaddress.AddressValueError as exc:
             raise InvalidIPAddressError(f"Invalid IP address: {ip_address}") from exc
+
 
 class DebugLogMiddleware:  # pylint: disable=too-few-public-methods
     """

@@ -7,16 +7,14 @@ import os
 # ...
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.exceptions import PathNotWritableError
 
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
-def write_statement_to_file(
-    content: bytes, file_path: str, force: bool = False
-) -> None:
+def write_statement_to_file(content: bytes, file_path: str, force: bool = False) -> None:
     """
     Write the statement content to a local file.
 

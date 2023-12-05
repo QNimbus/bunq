@@ -9,8 +9,8 @@ import datetime
 # ...
 
 # Local application/library imports
-from libs.log import setup_logger
-from libs.action import Action
+from libs.logger import setup_logger
+from libs.app_actions import Action
 
 DEFAULT_BUNQ_CONFIGURATION_FILE_NAME = ".bunq.conf"
 

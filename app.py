@@ -13,7 +13,7 @@ from bunq.sdk.context.api_environment_type import ApiEnvironmentType
 
 # Local application/library imports
 from libs.date import cap_date
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.argparser import Action, CLIArgs
 from libs.utils import write_statement_to_file
 from libs.exceptions import ConfigFileExistsError, PathNotWritableError

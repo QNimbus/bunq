@@ -28,8 +28,6 @@
 				"dev.containers.copyGitConfig": true,
 				"dev.containers.gitCredentialHelperConfigLocation": "global",
 				"editor.formatOnSave": true,
-				"files.autoSave": "afterDelay",
-				"files.autoSaveDelay": 1000,
 				"jupyter.interactiveWindow.textEditor.executeSelection": true,
 				"python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
 				"python.analysis.typeCheckingMode": "off",

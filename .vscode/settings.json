@@ -2,7 +2,7 @@
     "python.envFile": "${workspaceFolder}/.env",
     "black-formatter.args": [
         "--line-length",
-        "180"
+        "200"
     ],
     "json.schemas": [
         {

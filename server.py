@@ -3,7 +3,10 @@
 # Standard library imports
 import os
 import json
-from typing import Union
+from pathlib import Path
+from threading import Thread, Lock, Event, Timer
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 # Third-party imports
 from pydantic import TypeAdapter
@@ -12,14 +15,16 @@ from jsonschema.exceptions import ValidationError
 from flask import Flask, jsonify, request, current_app
 
 # Local application/library imports
-from libs.bunq_lib import BunqLib, CounterParty, MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings, RequestInquiryOptions, PaymentOptions
-from libs.redis_wrapper import RedisWrapper
-from libs.log import setup_logger, setup_logger_with_rotating_file_handler
+from libs.bunq_lib import BunqLib
 from libs.decorator import route, routes
-from libs.rules import process_rules, load_rules, get_nested_property
+from libs.redis_wrapper import RedisWrapper
+from libs.rules import process_rules, load_rules
+from libs.exceptions import RuleProcessingError, BunqLibError
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
-from schema.rules_model import Rules, Action, ForwardPaymentActionData, CreateRequestActionData, ForwardRemainingBalanceActionData
+from libs.logger import setup_logger, setup_logger_with_rotating_file_handler
+from libs.actions import action_forward_incoming_payment, action_forward_payment, action_forward_remaining_balance, action_request_from_payment
 from schema.callback_model import CallbackModel, EventType, PaymentType
+from schema.rules_model import RuleModel, ForwardPaymentActionData, CreateRequestActionData, ForwardRemainingBalanceActionData
 
 
 # Setup logging
@@ -38,22 +43,6 @@ failed_callback_logger = setup_logger_with_rotating_file_handler(
     max_bytes=100 * 1024 * 1024,
     backup_count=5,
 )
-
-
-def get_all_accounts(
-    bunq_lib: BunqLib,
-) -> dict[int, Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings]]:
-    """
-    Retrieve all active accounts from the BunqLib instance.
-
-    Args:
-        bunq_lib (BunqLib): The BunqLib instance.
-
-    Returns:
-        dict[int, Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings]]:
-        A dictionary of accounts with the account id as key.
-    """
-    return {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
 
 
 def process_payment(
@@ -75,7 +64,7 @@ def process_payment(
     payment_data = TypeAdapter(PaymentType).validate_python(callback_data.NotificationUrl.object.root.Payment)
 
     # Get the rules from the app session
-    rule_collections: dict[str, Rules] = current_app.config.get("RULES", {})
+    rule_collections: dict[str, RuleModel] = current_app.config.get("RULES", {})
 
     # Get or initialize the processed payments list
     processed_payments: dict[int, list[str]] = RedisWrapper.get_secure("processed_payments") or {}
@@ -109,9 +98,7 @@ def process_payment(
         if action.type.value == "DUMMY":
             logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Dummy action")
             logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} account: {payment_data.alias.iban} ({payment_data.alias.display_name})")
-            logger.debug(
-                f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} counterparty: {payment_data.counterparty_alias.iban} ({payment_data.counterparty_alias.display_name})"
-            )
+            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} counterparty: {payment_data.counterparty_alias.iban} ({payment_data.counterparty_alias.display_name})")
             logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} amount: {payment_data.amount.value} {payment_data.amount.currency}")
             logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} description: {payment_data.description}")
 
@@ -121,7 +108,7 @@ def process_payment(
             monetary_account_id = payment_data.monetary_account_id
 
             # Create array of monetary account ids from accounts list
-            accounts = get_all_accounts(bunq_lib)
+            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
 
             # If the monetary account id is found in the accounts list, create a request
             if monetary_account_id in accounts.keys():
@@ -138,7 +125,7 @@ def process_payment(
             monetary_account_id = payment_data.monetary_account_id
 
             # Create array of monetary account ids from accounts list
-            accounts = get_all_accounts(bunq_lib)
+            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
 
             # If the monetary account id is found in the accounts list, create a request
             if monetary_account_id in accounts.keys():
@@ -152,158 +139,18 @@ def process_payment(
             monetary_account_id = payment_data.monetary_account_id
 
             # Create array of monetary account ids from accounts list
-            accounts = get_all_accounts(bunq_lib)
+            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
 
             # If the monetary account id is found in the accounts list, create a request
             if monetary_account_id in accounts.keys():
                 forward_remaining_balance_action_data = TypeAdapter(ForwardRemainingBalanceActionData).validate_python(action.data)
 
-            
+                action_forward_remaining_balance(bunq_lib=bunq_lib, action=forward_remaining_balance_action_data, payment=payment_data, dry_run=action.dry_run)
+
             break
 
     if not success:
         logger.info(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Payment did not match any rules")
-
-
-def action_forward_payment(bunq_lib: BunqLib, action: ForwardPaymentActionData, payment: PaymentType, dry_run: bool = False) -> None:
-    """
-    Perform a forward payment action.
-
-    Args:
-        bunq_lib (BunqLib): The BunqLib instance used for making payments.
-        action (ForwardPaymentActionData): The data for the forward payment action.
-        payment (PaymentType): The payment to be forwarded.
-
-    Returns:
-        None
-    """
-    # Get own accounts
-    accounts = get_all_accounts(bunq_lib)
-
-    description = payment.description
-    counterparty = CounterParty(
-        name=action.forward_payment_to.name,
-        iban=action.forward_payment_to.iban,
-    )
-    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property)) * -1
-
-    if payment.monetary_account_id not in accounts.keys() and not action.allow_third_party_accounts:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_PAYMENT::{payment.id} is not allowed to third party accounts ({action.forward_payment_to.iban})")
-        return
-
-    if amount <= 0:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_PAYMENT::{payment.id} requires amount > 0 ({amount})")
-        return
-
-    if action.description is not None:
-        description = f"{action.description} - {description}"
-
-    logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_PAYMENT::{payment.id} {payment.monetary_account_id} -> {description}")
-
-    request_data = {
-        "amount": amount,
-        "counterparty": counterparty,
-        "monetary_account_id": payment.monetary_account_id,
-        "options": PaymentOptions(description=description),
-    }
-
-    if not dry_run:
-        bunq_lib.make_payment(**request_data)
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_PAYMENT::{payment.id} {payment.monetary_account_id} -> {description}")
-    else:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_PAYMENT::{payment.id} Calling 'bunq_lib.make_request' with {request_data}")
-
-
-def action_forward_incoming_payment(bunq_lib: BunqLib, action: ForwardPaymentActionData, payment: PaymentType, dry_run: bool = False) -> None:
-    """
-    Perform the action to forward an incoming payment.
-
-    Args:
-        bunq_lib (BunqLib): The BunqLib instance used for making payments.
-        action (ForwardPaymentActionData): The data for the forward payment action.
-        payment (PaymentType): The incoming payment to be forwarded.
-
-    Returns:
-        None
-    """
-    # Get own accounts
-    accounts = get_all_accounts(bunq_lib)
-
-    description = payment.description
-    counterparty = CounterParty(
-        name=action.forward_payment_to.name,
-        iban=action.forward_payment_to.iban,
-    )
-    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property))
-
-    if payment.monetary_account_id not in accounts.keys() and not action.allow_third_party_accounts:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_INCOMING_PAYMENT::{payment.id} is not allowed to third party accounts ({action.forward_payment_to.iban})")
-        return
-
-    if amount <= 0:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_INCOMING_PAYMENT::{payment.id} requires amount > 0 ({amount})")
-        return
-
-    if action.description is not None:
-        description = f"{action.description} - {description}"
-
-    request_data = {
-        "amount": amount,
-        "counterparty": counterparty,
-        "monetary_account_id": payment.monetary_account_id,
-        "options": PaymentOptions(description=description),
-    }
-
-    if not dry_run:
-        bunq_lib.make_payment(**request_data)
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_INCOMING_PAYMENT::{payment.id} {payment.monetary_account_id} -> {description}")
-    else:
-        logger.info(f"[/callback/{bunq_lib.user_id}] FORWARD_INCOMING_PAYMENT::{payment.id} Calling 'bunq_lib.make_request' with {request_data}")
-
-
-def action_request_from_payment(bunq_lib: BunqLib, action: CreateRequestActionData, payment: PaymentType, dry_run: bool = False) -> None:
-    """
-    Perform a request from payment action.
-
-    Args:
-        bunq_lib (BunqLib): The BunqLib instance.
-        action (CreateRequestActionData): The action data for creating a request.
-        payment (PaymentType): The payment data.
-
-    Returns:
-        None
-    """
-    # Get own accounts
-    accounts = get_all_accounts(bunq_lib)
-
-    description = payment.description
-    amount = float(get_nested_property(payment.model_dump(), action.amount_value_property)) * -1
-    counterparty = CounterParty(name=action.request_from.name, iban=action.request_from.iban)
-    request_account = f"{accounts[payment.monetary_account_id].display_name}|{accounts[payment.monetary_account_id].description}"
-
-    if action.ignore_own_accounts and payment.counterparty_alias.iban in accounts.keys():
-        logger.info(f"[/callback/{bunq_lib.user_id}] REQUEST_FROM_PAYMENT::{payment.id} is not allowed for own accounts ({accounts[payment.counterparty_alias.iban].description})")
-        return
-
-    if amount <= 0:
-        logger.info(f"[/callback/{bunq_lib.user_id}] REQUEST_FROM_PAYMENT::{payment.id} requires amount > 0 ({amount})")
-        return
-
-    if action.description is not None:
-        description = f"{action.description} --> {request_account} - {description}"
-
-    request_data = {
-        "amount": amount,
-        "counterparty": counterparty,
-        "monetary_account_id": payment.monetary_account_id,
-        "options": RequestInquiryOptions(description=description),
-    }
-
-    if not dry_run:
-        bunq_lib.make_request(**request_data)
-        logger.info(f"[/callback/{bunq_lib.user_id}] REQUEST_FROM_PAYMENT::{payment.id} {payment.monetary_account_id} -> {description}")
-    else:
-        logger.info(f"[/callback/{bunq_lib.user_id}] REQUEST_FROM_PAYMENT::{payment.id} Calling 'bunq_lib.make_request' with {request_data}")
 
 
 @route("/health", methods=["GET"])
@@ -397,6 +244,158 @@ def callback(user_id: int):
         return jsonify({"message": "Schema mismatch"}), 200
 
 
+class RuleFileChangeHandler(FileSystemEventHandler):
+    """
+    A class that handles file change events for rule files.
+
+    Attributes:
+        app (Flask): The Flask application object.
+        lock (Lock): A lock object for thread synchronization.
+
+    Methods:
+        load_rules_thread(app: Flask) -> None:
+            Load rules from JSON files in the specified directory and store them in the app's configuration.
+
+        on_modified(event) -> None:
+            Event handler for file modification events.
+    """
+
+    def __init__(self, app: Flask, event: Event, lock: Lock = None):
+        """
+        Initialize the RuleFileChangeHandler.
+
+        Args:
+            app (Flask): The Flask application object.
+            event (Event): The event object used to signal when the schemas are loaded.
+            lock (Lock, optional): A lock object for thread synchronization. Defaults to None.
+        """
+        self.app = app
+        self.event = event
+        self.debounce_timer = None
+
+        if lock is None:
+            self.lock = Lock()
+        else:
+            self.lock = lock
+
+    def on_modified(self, event) -> None:
+        """
+        Event handler for file modification events.
+
+        Args:
+            _event: The file modification event.
+
+        Returns:
+            None
+        """
+        # Start a new load_rules_thread when a file is modified
+        if event.is_directory:
+            return
+
+        if self.debounce_timer is not None:
+            self.debounce_timer.cancel()
+
+        self.debounce_timer = Timer(0.1, lambda: (Thread(target=load_rules_thread, args=(self.app, self.lock, self.event)).start(), logger.info("Rules changed, reloading rules"))[0])
+        self.debounce_timer.start()
+
+
+def load_rules_thread(app: Flask, lock: Lock, schemas_loaded: Event) -> None:
+    """
+    Load rules from JSON files in a separate thread and update the app configuration.
+
+    Args:
+        app (Flask): The Flask application object.
+        lock (Lock): A lock object used for thread synchronization.
+        schemas_loaded (Event): An event object used to signal when the schemas are loaded.
+
+    Returns:
+        None
+    """
+    try:
+        # Wait for the schemas to be loaded
+        schemas_loaded.wait()
+
+        rules: RuleModel = {}
+        rules_dir: Path = app.config["RULES_DIR"]
+        rules_schema: dict = app.config["RULES_SCHEMA"]
+        for file in rules_dir.glob("*.rules.json"):
+            rules_file = rules_dir / file
+            rules[file.name] = load_rules(schema=rules_schema, rules_path=rules_file)
+            logger.info(f"Loaded rules from {rules_file}")
+
+        # Use the lock to ensure thread-safe writing to app.config
+        with lock:
+            app.config["RULES"] = rules
+
+        # Signal that the schemas are loaded
+        schemas_loaded.set()
+    except RuleProcessingError as error:
+        logger.error(error)
+
+
+def load_config_thread(app: Flask, lock: Lock, configurations_loaded: Event) -> None:
+    """
+    Load configuration from JSON files in a separate thread and update the app configuration.
+
+    Args:
+        app (Flask): The Flask application object.
+        lock (Lock): A lock object used for thread synchronization.
+
+    Returns:
+        None
+    """
+    try:
+        bunq_configs: dict[str, BunqLib] = {}
+        conf_dir: Path = app.config["CONF_DIR"]
+        for file in conf_dir.glob("*.conf"):
+            # Use the lock to ensure thread-safe loading of BunqLib instances
+            with lock:
+                conf_file = conf_dir / file
+                bunq_lib = BunqLib(production_mode=True, config_file=conf_file)
+                bunq_configs[bunq_lib.user_id] = bunq_lib
+                logger.info(f"Initialized BunqLib for user '{bunq_lib.user.display_name}' with config file: {conf_file}")
+
+        # Use the lock to ensure thread-safe writing to app.config
+        with lock:
+            app.config["BUNQ_CONFIGS"] = bunq_configs
+            configurations_loaded.set()
+
+    except BunqLibError as error:
+        logger.error(error)
+
+
+def load_schema_thread(app: Flask, lock: Lock, schema_loaded: Event, schema_name: str) -> None:
+    """
+    Load the rules schema from the schema file in a separate thread and update the app configuration.
+
+    Args:
+        app (Flask): The Flask application object.
+        lock (Lock): A lock object used for thread synchronization.
+        schema_loaded (Event): An event object used to signal that the schema has been loaded.
+
+    Returns:
+        None
+    """
+    try:
+        rules_schema: dict = {}
+        schema_dir: Path = app.config["SCHEMA_DIR"]
+        schema_file = schema_dir / f"{schema_name}.schema.json"
+        with open(schema_file, "r", encoding="utf-8") as file:
+            rules_schema = json.load(file)
+            logger.info(f"Loaded rules schema from {schema_file}")
+
+        # Use the lock to ensure thread-safe writing to app.config
+        with lock:
+            key = schema_name.upper() + "_SCHEMA"
+            app.config[key] = rules_schema
+            schema_loaded.set()
+
+    except (FileNotFoundError, PermissionError) as error:
+        logger.error(error)
+    except json.JSONDecodeError as error:
+        logger.error(error)
+
+
 def create_server(allowed_ips: list[str] = None) -> Flask:
     """
     Starts the Flask server.
@@ -406,6 +405,10 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     """
     logger.info("Starting server")
 
+    # Create the Flask application
+    app = Flask(__name__)
+    lock_app_config = Lock()
+
     if allowed_ips is None:
         if os.environ.get("ALLOWED_IPS", None) is None:
             allowed_ips = []
@@ -414,42 +417,34 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
 
     logger.info(f"Allowed IPs: {allowed_ips}")
 
-    # Load the rules schema from an external file
-    rules_schema_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema/rules.schema.json")
-    with open(rules_schema_file, "r", encoding="utf-8") as file:
-        rules_schema = json.load(file)
+    # Set the paths for the rules and configuration files
+    app.config["CONF_DIR"] = Path(__file__).parent / "conf"
+    app.config["RULES_DIR"] = Path(__file__).parent / "rules"
+    app.config["SCHEMA_DIR"] = Path(__file__).parent / "schema"
 
-    # Load the rules from external files
-    rules: Rules = {}
-    rules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules/")
-    for file in os.listdir(rules_dir):
-        if file.endswith("rules.json"):
-            rules_file = os.path.join(rules_dir, file)
-            rules[file] = load_rules(schema=rules_schema, rules_path=rules_file)
-            logger.info(f"Loaded rules from {rules_file}")
+    # Register a file change handler to reload the rules when a file is modified
+    observer = Observer()
+    rule_schemas_loaded = Event()
+    callback_schemas_loaded = Event()
+    configurations_loaded = Event()
+    rule_file_change_handler = RuleFileChangeHandler(app=app, event=rule_schemas_loaded, lock=lock_app_config)
+    observer.schedule(rule_file_change_handler, path=app.config["RULES_DIR"])
+    observer.start()
 
-    # Load the callback schema from an external file
-    callback_schema_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema/callback.schema.json")
-    with open(callback_schema_file, "r", encoding="utf-8") as file:
-        callback_schema: CallbackModel = json.load(file)
+    # Load schemas in a separate thread
+    Thread(target=load_schema_thread, args=(app, lock_app_config, rule_schemas_loaded, "rules")).start()
+    Thread(target=load_schema_thread, args=(app, lock_app_config, callback_schemas_loaded, "callback")).start()
+
+    # Load rules in a separate thread
+    Thread(target=load_rules_thread, args=(app, lock_app_config, rule_schemas_loaded)).start()
 
     # Initialize BunqApp instances
-    bunq_configs: dict[str, BunqLib] = {}
-    conf_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "conf/")
-    for file in os.listdir(conf_dir):
-        if file.endswith(".conf"):
-            conf_file = os.path.join(conf_dir, file)
-            bunq_lib = BunqLib(production_mode=True, config_file=conf_file)
-            bunq_configs[bunq_lib.user_id] = bunq_lib
-            logger.info(f"Initialized BunqLib for user '{bunq_lib.user.display_name}' with config file: {conf_file}")
+    Thread(target=load_config_thread, args=(app, lock_app_config, configurations_loaded)).start()
 
-    # Create the Flask application
-    app = Flask(__name__)
-
-    # Store schema in app session
-    app.config["RULES"] = rules
-    app.config["BUNQ_CONFIGS"] = bunq_configs
-    app.config["CALLBACK_SCHEMA"] = callback_schema
+    # Wait for the schemas to be loaded
+    rule_schemas_loaded.wait()
+    callback_schemas_loaded.wait()
+    configurations_loaded.wait()
 
     # Register stored routes
     for rule, f, options in routes:

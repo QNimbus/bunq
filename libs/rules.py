@@ -12,9 +12,9 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.exceptions import RuleProcessingError
-from schema.rules_model import Action, PropertyRuleType, BalanceRuleType, RuleCondition, Rules, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
+from schema.rules_model import Action, PropertyRuleType, BalanceRuleType, RuleCondition, RuleModel, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
 from schema.callback_model import (
     EventType,
     PaymentType,
@@ -48,23 +48,14 @@ def load_rules(schema: any, rules_path: str) -> list[RuleGroup]:
 
         validate(instance=rules, schema=schema)
 
-        return TypeAdapter(Rules).validate_python(rules).root
+        return TypeAdapter(RuleModel).validate_python(rules).root
 
-    except ValidationError as error:
-        # Return the error message and details about the failed validation
-        error_details = {
-            "message": str(error.message),
-            "validator": error.validator,
-            "validator_value": error.validator_value,
-            "path": list(error.path),
-            "schema_path": list(error.schema_path),
-        }
-
-        logger.debug(f"Error validating rules:':\n\n{json.dumps(error_details, indent=2)}")
-
-        raise RuleProcessingError(f"Error validating rules: {error}") from error
-    except Exception as error:
+    except (PermissionError, FileNotFoundError) as error:
         raise RuleProcessingError(f"Error loading rules: {error}") from error
+    except json.JSONDecodeError as error:
+        raise RuleProcessingError(f"Error decoding rules: {error}") from error
+    except ValidationError as error:
+        raise RuleProcessingError(f"Error validating rules: {error}") from error
 
 
 def check_rule(
@@ -75,11 +66,11 @@ def check_rule(
     Checks if a given rule matches the given payment data.
 
     Args:
-        data (PaymentType): Payment data.
-        rule (Rule): Rule definition.
+        data (PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType): The payment data to be checked.
+        rule (RuleThatActsOnAProperty | RuleThatActsOnBalance): The rule definition to be applied.
 
     Returns:
-        bool: True if rule matches, False otherwise.
+        bool: True if the rule matches, False otherwise.
 
     Raises:
         RuleProcessingError: If an error occurs during rule processing.
@@ -89,22 +80,23 @@ def check_rule(
             rule_type = rule.type
             rule_value = rule.value
             rule_case_sensitive = rule.case_sensitive
+            rule_flags = re.IGNORECASE if not rule_case_sensitive else 0
             property_value = get_nested_property(data.model_dump(), rule.property)
 
             # Convert rule value to lowercase if rule is not case sensitive
-            if isinstance(property_value, str):
+            if rule_type != PropertyRuleType.REGEX and isinstance(property_value, str):
                 if not rule_case_sensitive:
                     property_value = property_value.strip().lower()
                 else:
                     property_value = property_value.strip()
 
-            if isinstance(rule_value, str):
+            if rule_type != PropertyRuleType.REGEX and isinstance(rule_value, str):
                 if not rule_case_sensitive:
                     rule_value = rule_value.strip().lower()
                 else:
                     rule_value = rule_value.strip()
 
-            if isinstance(rule_value, list) and all(isinstance(item, str) for item in rule_value):
+            if rule_type != PropertyRuleType.REGEX and isinstance(rule_value, list) and all(isinstance(item, str) for item in rule_value):
                 if not rule_case_sensitive:
                     rule_value = [item.strip().lower() for item in rule_value]
                 else:
@@ -117,7 +109,13 @@ def check_rule(
             raise ValueError(f"Unknown rule type: {rule}")
 
         def regex_match():
-            return re.fullmatch(rule_value, property_value or "") is not None
+            if property_value and rule_value:
+                if isinstance(rule_value, str):
+                    value = [rule_value]
+                else:
+                    value = rule_value
+
+            return any(re.fullmatch(pattern=v, string=property_value or "", flags=rule_flags) for v in value)
 
         def is_empty():
             return not property_value
@@ -174,12 +172,12 @@ def check_rule(
         def balance_decreased(by: float = 0):
             same_currency = data.amount.currency == data.balance_after_mutation.currency
             balance_before_mutation = float(data.balance_after_mutation.value) - float(data.amount.value)
-            return same_currency and float(data.balance_after_mutation.value) < (balance_before_mutation - by)
+            return same_currency and float(data.balance_after_mutation.value) <= (balance_before_mutation - by)
 
         def balance_increased(by: float = 0):
             same_currency = data.amount.currency == data.balance_after_mutation.currency
             balance_before_mutation = float(data.balance_after_mutation.value) - float(data.amount.value)
-            return same_currency and float(data.balance_after_mutation.value) > (balance_before_mutation + by)
+            return same_currency and float(data.balance_after_mutation.value) >= (balance_before_mutation + by)
 
         rule_checks = {
             PropertyRuleType.REGEX: regex_match,
@@ -206,7 +204,7 @@ def check_rule(
 def process_rules(
     event_type: EventType,
     data: PaymentType | RequestInquiryType | RequestResponseType | MasterCardActionType,
-    rules: Rules,
+    rules: RuleModel,
 ) -> (bool, Action, str):
     """
     Recursively processes a list of rules and returns a tuple containing a boolean indicating whether any of the rules matched

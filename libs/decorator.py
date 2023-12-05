@@ -4,7 +4,7 @@
 import os
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))

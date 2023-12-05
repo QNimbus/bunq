@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 import redis
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.exceptions import RedisMemoizeError, RedisMemoizeRuntimeError, SecurityError
 
 # Setup logging

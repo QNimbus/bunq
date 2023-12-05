@@ -183,6 +183,18 @@ class RuleProcessingError(Exception):
         super().__init__(self.message)
 
 
+class BunqLibError(Exception):
+    """Exception raised for errors in the bunq library.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+
 # class InvalidCountError(ValueError):
 #     """Raised when the provided count is not valid."""
 

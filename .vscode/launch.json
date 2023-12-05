@@ -87,7 +87,6 @@
             "args": [
                 "--workers=1",
                 "--timeout=0", // This disables the timeout, useful for debugging
-                "--reload", // This flag enables auto-reloading on code changes
                 "--bind=127.0.0.1:5000",
                 "server:create_server()"
             ],

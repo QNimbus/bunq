@@ -5,7 +5,7 @@ import os
 from datetime import date, datetime, timedelta
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.exceptions import DateError
 
 # Setup logging
@@ -65,15 +65,11 @@ def week_to_dates(year: int, week_number: int) -> tuple[str, str]:
     ('2023-10-02', '2023-10-08')
     """
     if not 1 <= week_number <= 53:
-        raise DateError(
-            f"Week number must be between 1 and 53. Received {week_number}."
-        )
+        raise DateError(f"Week number must be between 1 and 53. Received {week_number}.")
 
     try:
         first_day_of_year = datetime(year, 1, 1)
-        start_date = first_day_of_year + timedelta(
-            days=(week_number * 7) - first_day_of_year.weekday()
-        )
+        start_date = first_day_of_year + timedelta(days=(week_number * 7) - first_day_of_year.weekday())
         end_date = start_date + timedelta(days=6)
 
         return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
@@ -109,6 +105,4 @@ def date_to_week(date_str: str = None) -> tuple[int, int]:
         return (date_obj.isocalendar()[0], date_obj.isocalendar()[1])
 
     except ValueError as exc:
-        raise DateError(
-            f"The date string '{date_str}' is not in 'YYYY-MM-DD' format or is an invalid date."
-        ) from exc
+        raise DateError(f"The date string '{date_str}' is not in 'YYYY-MM-DD' format or is an invalid date.") from exc

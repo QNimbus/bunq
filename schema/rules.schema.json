@@ -84,7 +84,7 @@
                     "then": {
                         "title": "Rule that checks a property against a regular expression",
                         "properties": {
-                            "case_sensitive": false,
+                            "case_sensitive": true,
                             "value": true,
                             "property": true
                         },
@@ -250,10 +250,6 @@
         "CreateRequestActionData": {
             "type": "object",
             "properties": {
-                "amount_value_property": {
-                    "type": "string",
-                    "default": "amount.value"
-                },
                 "ignore_own_accounts": {
                     "type": "boolean",
                     "default": true
@@ -273,10 +269,6 @@
         "ForwardPaymentActionData": {
             "type": "object",
             "properties": {
-                "amount_value_property": {
-                    "type": "string",
-                    "default": "amount.value"
-                },
                 "allow_third_party_accounts": {
                     "type": "boolean",
                     "default": false
@@ -298,6 +290,10 @@
             "properties": {
                 "forward_remaining_balance_to": {
                     "$ref": "#/definitions/BankAccount"
+                },
+                "allow_third_party_accounts": {
+                    "type": "boolean",
+                    "default": false
                 },
                 "description": {
                     "type": "string"
@@ -343,7 +339,6 @@
         }
     },
     "type": "array",
-    "title": "Rules",
     "items": {
         "type": "object",
         "title": "RuleRoot",

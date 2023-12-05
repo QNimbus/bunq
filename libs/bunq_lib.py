@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from bunq import ApiEnvironmentType, Pagination
 from bunq.sdk.context.api_context import ApiContext
 from bunq.sdk.context.bunq_context import BunqContext
-from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.model.generated.object_ import Amount, Pointer
 from bunq.sdk.model.generated.endpoint import (
     User,
@@ -28,19 +27,21 @@ from bunq.sdk.model.generated.endpoint import (
 )
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 from libs.redis_wrapper import redis_memoize, JsonSerializer
 from libs.exceptions import (
-    StatementNotFoundError,
+    BunqLibError,
     ExportError,
+    StatementNotFoundError,
     StatementDeletionError,
     StatementsRetrievalError,
 )
 
 # Constants
-REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24 # 24 hours
+REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24  # 24 hours
 
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
+
 
 def custom_serializer(obj):
     """
@@ -77,7 +78,7 @@ class MonetaryAccountSerializer(JsonSerializer):
             str: The JSON string representation of the serialized array.
         """
         return json.dumps(obj, default=custom_serializer)
-    
+
     @classmethod
     def deserialize(cls, json_string: str) -> list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]:
         """
@@ -91,6 +92,7 @@ class MonetaryAccountSerializer(JsonSerializer):
         """
         parsed_data = json.loads(json_string)
         return [MonetaryAccountBank.from_json(item) for item in parsed_data]
+
 
 @dataclass
 class CounterParty:
@@ -221,7 +223,11 @@ class BunqLib:
             return self.api_context
 
         if not os.path.isfile(self.config_file):
-            raise BunqException(BunqLib._ERROR_COULD_NOT_DETERMINE_CONF)
+            raise BunqLibError(self._ERROR_COULD_NOT_DETERMINE_CONF)
+
+        # If file is not readable or writable, bunq will throw an exception
+        if not os.access(self.config_file, os.R_OK | os.W_OK):
+            raise BunqLibError(f"Configuration file {self.config_file} is not readable or writable.")
 
         api_context = ApiContext.restore(self.config_file)
         api_context.ensure_session_active()

@@ -9,7 +9,7 @@ from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.model.generated.endpoint import UserPerson, UserCompany, UserLight, MonetaryAccountBank
 
 # Local application/library imports
-from libs.log import setup_logger
+from libs.logger import setup_logger
 
 
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))

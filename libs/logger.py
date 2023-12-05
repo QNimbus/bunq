@@ -29,12 +29,12 @@ class ColoredFormatter(logging.Formatter):
     def format(self, record):
         log_message = super().format(record)
         color = self.COLORS.get(record.levelname, "white")
+        pid = os.getpid()
+        log_message = f"[PID: {pid}] {log_message}"
         return colored(log_message, color)
 
 
-def setup_logger(
-    name: str, log_level: str = "DEBUG", use_color: bool = False
-) -> logging.Logger:
+def setup_logger(name: str, log_level: str = "DEBUG", use_color: bool = False) -> logging.Logger:
     """
     Set up a logger with the specified log level.
 
@@ -61,15 +61,17 @@ def setup_logger(
         handler = logging.StreamHandler()
         handler.setLevel(numeric_level)
 
+        pid = os.getpid()
+
         if use_color:
             formatter = ColoredFormatter(
-                fmt="%(asctime)s [%(levelname)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
+                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S %z",
             )
         else:
             formatter = logging.Formatter(
-                fmt="%(asctime)s [%(levelname)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
+                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S %z",
             )
 
         handler.setFormatter(formatter)
@@ -121,9 +123,7 @@ def setup_logger_with_rotating_file_handler(
             # Replace the extension with .<pid>.log
             filename = f"{filename.rsplit('.', 1)[0]}.{pid}.log"
 
-        handler = logging.handlers.RotatingFileHandler(
-            filename=filename, maxBytes=max_bytes, backupCount=backup_count
-        )
+        handler = logging.handlers.RotatingFileHandler(filename=filename, maxBytes=max_bytes, backupCount=backup_count)
         handler.setLevel(numeric_level)
 
         # Setup a formatter wihtout colors:
