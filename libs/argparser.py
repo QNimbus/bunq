@@ -38,6 +38,27 @@ def parse_date(date_str):
         raise argparse.ArgumentTypeError(f"Invalid date format: {date_str}. Use YYYY-MM-DD format.") from exc
 
 
+class Range(object):
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def __eq__(self, other):
+        return self.start <= other <= self.end
+
+    def __contains__(self, item):
+        return self.__eq__(item)
+
+    def __iter__(self):
+        yield self
+
+    def __str__(self):
+        return "[{0},{1}]".format(self.start, self.end)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 class CLIArgs:
     """
     This class represents the command-line arguments that can be passed to the application.
@@ -48,6 +69,12 @@ class CLIArgs:
 
     _ACTION_CREATE_CONFIG_API_KEY = "--api-key"
     _ACTION_CREATE_REQUEST_AMOUNT = "--amount"
+    _ACTION_CREATE_PAYMENT_AMOUNT = "--amount"
+    _ACTION_CREATE_PAYMENT_SOURCE = "--source-iban"
+    _ACTION_CREATE_PAYMENT_DESTINATION_NAME = "--destination-name"
+    _ACTION_CREATE_PAYMENT_DESTINATION_IBAN = "--destination-iban"
+    _ACTION_CREATE_PAYMENT_DESCRIPTION = "--description"
+    _ACTION_CREATE_PAYMENT_ALLOW_THIRD_PARTY = "--allow-third-party"
     _ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE = "--include-inactive"
     _ACTION_EXPORT_PATH = "--path"
     _ACTION_EXPORT_STARTDATE = "--start-date"
@@ -73,11 +100,13 @@ class CLIArgs:
 
         self.action_create_config_parser = self.subparsers.add_parser(Action.SHOW_USER.value, help="Show user information.")
 
-        self.action_create_config_parser = self.subparsers.add_parser(Action.CREATE_CONFIG.value, help="Create a configuration file.")
+        self.action_create_config_parser = self.subparsers.add_parser(Action.CREATE_CONFIG.value, help="Create configuration file.")
 
         self.action_export_parser = self.subparsers.add_parser(Action.EXPORT.value, help="Export data.")
 
-        self.action_create_request_parser = self.subparsers.add_parser(Action.CREATE_REQUEST.value, help="Create a request for payment.")
+        self.action_create_request_parser = self.subparsers.add_parser(Action.CREATE_REQUEST.value, help="Create request for payment.")
+
+        self.action_create_payment_parser = self.subparsers.add_parser(Action.CREATE_PAYMENT.value, help="Create payment.")
 
         self.action_show_accounts_parser = self.subparsers.add_parser(Action.SHOW_ACCOUNTS.value, help="Show information abount all accounts.")
 
@@ -95,6 +124,40 @@ class CLIArgs:
             required=True,
             help="Amount to request.",
         )
+
+        self.action_create_payment_parser.add_argument(
+            CLIArgs._ACTION_CREATE_PAYMENT_AMOUNT,
+            required=True,
+            type=float,
+            choices=[Range(0.01, 9999.99)],
+            help="Amount to pay.",
+        )
+
+        self.action_create_payment_parser.add_argument(
+            CLIArgs._ACTION_CREATE_PAYMENT_SOURCE,
+            required=True,
+            help="IBAN account to pay from.",
+        )
+
+        self.action_create_payment_parser.add_argument(
+            CLIArgs._ACTION_CREATE_PAYMENT_DESTINATION_IBAN,
+            required=True,
+            help="IBAN account to pay to.",
+        )
+
+        self.action_create_payment_parser.add_argument(
+            CLIArgs._ACTION_CREATE_PAYMENT_DESTINATION_NAME,
+            required=True,
+            help="Name  of account owner to pay to.",
+        )
+
+        self.action_create_payment_parser.add_argument(
+            CLIArgs._ACTION_CREATE_PAYMENT_DESCRIPTION,
+            required=True,
+            help="Description to add to payment.",
+        )
+
+        self.action_create_payment_parser.add_argument(CLIArgs._ACTION_CREATE_PAYMENT_ALLOW_THIRD_PARTY, action="store_true", default=False, help="Allow payments to third party accounts.")
 
         self.action_show_accounts_parser.add_argument(
             CLIArgs._ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE,

@@ -26,19 +26,61 @@
             "id": "configurationFile",
             "type": "promptString",
             "description": "Bunq configuration file to use"
-        }
+        },
+        {
+            "id": "sourceIBAN",
+            "type": "promptString",
+            "description": "Source IBAN"
+        },
+        {
+            "id": "destinationIBAN",
+            "type": "promptString",
+            "description": "Destination IBAN"
+        },
+        {
+            "id": "destinationName",
+            "type": "promptString",
+            "description": "Destination name"
+        },
     ],
     "configurations": [
         {
-            "name": "Bunq: Debug app.py",
+            "name": "Bunq: Debug app.py (create-config)",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/app.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
             "args": [
                 "--production",
                 "create-config"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Bunq: Debug app.py (create-payment)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "--production",
+                "--config-file",
+                "${input:configurationFile}",
+                "create-payment",
+                "--amount",
+                "0.01",
+                "--description",
+                "Test payment",
+                "--source-iban",
+                "${input:sourceIBAN}",
+                "--destination-name",
+                "${input:destinationName}",
+                "--destination-iban",
+                "${input:destinationIBAN}"
             ],
             "justMyCode": true
         },

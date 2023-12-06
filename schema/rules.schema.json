@@ -247,13 +247,9 @@
                 "NONE"
             ]
         },
-        "CreateRequestActionData": {
+        "RequestFromExpenseActionData": {
             "type": "object",
             "properties": {
-                "ignore_own_accounts": {
-                    "type": "boolean",
-                    "default": true
-                },
                 "request_from": {
                     "$ref": "#/definitions/BankAccount"
                 },
@@ -266,14 +262,14 @@
             ],
             "additionalProperties": false
         },
-        "ForwardPaymentActionData": {
+        "TransferIncomingPaymentActionData": {
             "type": "object",
             "properties": {
-                "allow_third_party_accounts": {
+                "only_allow_own_accounts": {
                     "type": "boolean",
-                    "default": false
+                    "default": true
                 },
-                "forward_payment_to": {
+                "transfer_payment_to": {
                     "$ref": "#/definitions/BankAccount"
                 },
                 "description": {
@@ -281,26 +277,26 @@
                 }
             },
             "required": [
-                "forward_payment_to"
+                "transfer_payment_to"
             ],
             "additionalProperties": false
         },
-        "ForwardRemainingBalanceActionData": {
+        "TransferRemainingBalanceActionData": {
             "type": "object",
             "properties": {
-                "forward_remaining_balance_to": {
-                    "$ref": "#/definitions/BankAccount"
-                },
-                "allow_third_party_accounts": {
+                "only_allow_own_accounts": {
                     "type": "boolean",
-                    "default": false
+                    "default": true
+                },
+                "transfer_remaining_balance_to": {
+                    "$ref": "#/definitions/BankAccount"
                 },
                 "description": {
                     "type": "string"
                 }
             },
             "required": [
-                "forward_remaining_balance_to"
+                "transfer_remaining_balance_to"
             ],
             "additionalProperties": false
         },
@@ -353,10 +349,9 @@
                         "title": "Action Type",
                         "enum": [
                             "DUMMY",
-                            "REQUEST_FROM_PAYMENT",
-                            "FORWARD_REMAINING_BALANCE",
-                            "FORWARD_INCOMING_PAYMENT",
-                            "FORWARD_PAYMENT"
+                            "REQUEST_FROM_EXPENSE",
+                            "TRANSFER_REMAINING_BALANCE",
+                            "TRANSFER_INCOMING_PAYMENT"
                         ]
                     },
                     "events": {
@@ -370,13 +365,13 @@
                         "type": "object",
                         "oneOf": [
                             {
-                                "$ref": "#/definitions/CreateRequestActionData"
+                                "$ref": "#/definitions/RequestFromExpenseActionData"
                             },
                             {
-                                "$ref": "#/definitions/ForwardPaymentActionData"
+                                "$ref": "#/definitions/TransferIncomingPaymentActionData"
                             },
                             {
-                                "$ref": "#/definitions/ForwardRemainingBalanceActionData"
+                                "$ref": "#/definitions/TransferRemainingBalanceActionData"
                             }
                         ]
                     },
@@ -390,14 +385,14 @@
                         "if": {
                             "properties": {
                                 "type": {
-                                    "const": "REQUEST_FROM_PAYMENT"
+                                    "const": "REQUEST_FROM_EXPENSE"
                                 }
                             }
                         },
                         "then": {
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/CreateRequestActionData"
+                                    "$ref": "#/definitions/RequestFromExpenseActionData"
                                 }
                             },
                             "required": [
@@ -409,14 +404,14 @@
                         "if": {
                             "properties": {
                                 "type": {
-                                    "const": "FORWARD_REMAINING_BALANCE"
+                                    "const": "TRANSFER_REMAINING_BALANCE"
                                 }
                             }
                         },
                         "then": {
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/ForwardRemainingBalanceActionData"
+                                    "$ref": "#/definitions/TransferRemainingBalanceActionData"
                                 }
                             },
                             "required": [
@@ -428,33 +423,14 @@
                         "if": {
                             "properties": {
                                 "type": {
-                                    "const": "FORWARD_PAYMENT"
+                                    "const": "TRANSFER_INCOMING_PAYMENT"
                                 }
                             }
                         },
                         "then": {
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/ForwardPaymentActionData"
-                                }
-                            },
-                            "required": [
-                                "data"
-                            ]
-                        }
-                    },
-                    {
-                        "if": {
-                            "properties": {
-                                "type": {
-                                    "const": "FORWARD_INCOMING_PAYMENT"
-                                }
-                            }
-                        },
-                        "then": {
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/ForwardPaymentActionData"
+                                    "$ref": "#/definitions/TransferIncomingPaymentActionData"
                                 }
                             },
                             "required": [

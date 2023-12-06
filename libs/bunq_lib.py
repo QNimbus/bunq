@@ -43,24 +43,6 @@ REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24  # 24 hours
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
-def custom_serializer(obj):
-    """
-    Custom serializer function for JSON serialization.
-
-    Args:
-        obj: The object to be serialized.
-
-    Returns:
-        The serialized JSON representation of the object.
-
-    Raises:
-        TypeError: If the object is not of type MonetaryAccountBank, MonetaryAccountJoint or MonetaryAccountSavings.
-    """
-    if isinstance(obj, (MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings)):
-        return obj.to_json()
-    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
-
-
 class MonetaryAccountSerializer(JsonSerializer):
     """
     A class that implements the JsonSerializer interface for the MonetaryAccountBank class.
@@ -77,6 +59,33 @@ class MonetaryAccountSerializer(JsonSerializer):
         Returns:
             str: The JSON string representation of the serialized array.
         """
+
+        def custom_serializer(obj):
+            """
+            Custom serializer function for JSON serialization.
+
+            Args:
+                obj: The object to be serialized.
+
+            Returns:
+                The serialized JSON representation of the object.
+
+            Raises:
+                TypeError: If the object is not of type MonetaryAccountBank, MonetaryAccountJoint or MonetaryAccountSavings.
+            """
+            if isinstance(obj, (MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings)):
+                obj_json = []
+
+                # Get the class name of the object
+                obj_json.append(obj.__class__.__name__)
+
+                # Get the JSON representation of the object
+                obj_json.append(obj.to_json())
+
+                return obj_json
+
+            raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
         return json.dumps(obj, default=custom_serializer)
 
     @classmethod
@@ -91,7 +100,20 @@ class MonetaryAccountSerializer(JsonSerializer):
             list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]: The deserialized array of objects.
         """
         parsed_data = json.loads(json_string)
-        return [MonetaryAccountBank.from_json(item) for item in parsed_data]
+        deserialized_objects = []
+
+        for item in parsed_data:
+            object_class = item[0]
+            object_data = item[1]
+
+            if object_class == "MonetaryAccountBank":
+                deserialized_objects.append(MonetaryAccountBank.from_json(object_data))
+            elif object_class == "MonetaryAccountJoint":
+                deserialized_objects.append(MonetaryAccountJoint.from_json(object_data))
+            elif object_class == "MonetaryAccountSavings":
+                deserialized_objects.append(MonetaryAccountSavings.from_json(object_data))
+
+        return deserialized_objects
 
 
 @dataclass
@@ -195,6 +217,8 @@ class BunqLib:
             production_mode (bool, optional): Whether to use the production environment or the sandbox environment. Defaults to False.
             config_file (str, optional): The path to the configuration file to use. Defaults to None.
         """
+        self._max_payment_amount = float(os.environ.get("MAX_PAYMENT_AMOUNT", 1.00))
+
         self._user = None
         self.config_file = config_file if config_file else self.determine_bunq_conf_filename()
         self.env = ApiEnvironmentType.PRODUCTION if production_mode else ApiEnvironmentType.SANDBOX
@@ -212,6 +236,13 @@ class BunqLib:
 
     def __repr__(self):
         return f"BunqLib(user_id={self._user.id_})"
+
+    @property
+    def max_payment_amount(self) -> float:
+        """
+        Returns the maximum payment amount.
+        """
+        return self._max_payment_amount
 
     def setup_context(self) -> None:
         """
@@ -281,7 +312,7 @@ class BunqLib:
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
-        accounts = MonetaryAccountBank.list(pagination.url_params_count_only).value
+        accounts: list[MonetaryAccountBank] = MonetaryAccountBank.list(pagination.url_params_count_only).value
 
         if only_active:
             accounts_active: list[MonetaryAccountBank] = []
@@ -304,7 +335,7 @@ class BunqLib:
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
-        accounts = MonetaryAccountJoint.list(pagination.url_params_count_only).value
+        accounts: list[MonetaryAccountJoint] = MonetaryAccountJoint.list(pagination.url_params_count_only).value
 
         if only_active:
             accounts_active: list[MonetaryAccountJoint] = []
@@ -327,7 +358,7 @@ class BunqLib:
         pagination = Pagination()
         pagination.count = self._PAGINATION_DEFAULT_COUNT
 
-        accounts = MonetaryAccountSavings.list(pagination.url_params_count_only).value
+        accounts: list[MonetaryAccountSavings] = MonetaryAccountSavings.list(pagination.url_params_count_only).value
 
         if only_active:
             accounts_active: list[MonetaryAccountSavings] = []
@@ -340,9 +371,7 @@ class BunqLib:
 
         return accounts
 
-    def get_all_accounts(
-        self, only_active: bool = False
-    ) -> list[Union[MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings,]]:
+    def get_all_accounts(self, only_active: bool = False) -> list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]:
         """
         Returns a list of all accounts for the current user.
         """
@@ -393,6 +422,10 @@ class BunqLib:
         counterparty: CounterParty,
         options: PaymentOptions = None,
     ) -> int:
+        # Check if amount is positive and less than the maximum payment amount
+        if amount <= 0 or amount > self.max_payment_amount:
+            raise ValueError(f"Amount must be positive and less than {self.max_payment_amount}")
+
         self.setup_context()
 
         if options is None:
@@ -554,3 +587,41 @@ class BunqLib:
         Returns the ID of the current user.
         """
         return self._user.id_
+
+
+class Utilites:
+    """
+    Utility class for payment processing operations.
+    """
+
+    @staticmethod
+    def get_accounts_by_monetary_account_id(bunq_lib: BunqLib) -> dict[int, list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]]:
+        """
+        Get the accounts associated with the user from the Bunq library.
+
+        Args:
+            bunq_lib (BunqLib): The Bunq library instance.
+
+        Returns:
+            dict: A dictionary containing the monetary account IDs as keys and the corresponding accounts as values.
+        """
+        accounts: dict[str, list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]]
+        accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
+
+        return accounts
+
+    @staticmethod
+    def get_accounts_by_iban(bunq_lib: BunqLib) -> dict[str, list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]]:
+        """
+        Get the accounts associated with the user from the Bunq library.
+
+        Args:
+            bunq_lib (BunqLib): The Bunq library instance.
+
+        Returns:
+            dict: A dictionary containing the IBANs as keys and the corresponding accounts as values.
+        """
+        accounts: dict[str, list[MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings]]
+        accounts = {alias.value: account for account in bunq_lib.get_all_accounts(only_active=True) for alias in account.alias if alias.type_ == "IBAN"}
+
+        return accounts

@@ -16,15 +16,14 @@ from flask import Flask, jsonify, request, current_app
 
 # Local application/library imports
 from libs.bunq_lib import BunqLib
+from libs.rules import load_rules
+from libs.payment import process_payment
 from libs.decorator import route, routes
-from libs.redis_wrapper import RedisWrapper
-from libs.rules import process_rules, load_rules
 from libs.exceptions import RuleProcessingError, BunqLibError
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
 from libs.logger import setup_logger, setup_logger_with_rotating_file_handler
-from libs.actions import action_forward_incoming_payment, action_forward_payment, action_forward_remaining_balance, action_request_from_payment
-from schema.callback_model import CallbackModel, EventType, PaymentType
-from schema.rules_model import RuleModel, ForwardPaymentActionData, CreateRequestActionData, ForwardRemainingBalanceActionData
+from schema.rules_model import RuleModel
+from schema.callback_model import CallbackModel
 
 
 # Setup logging
@@ -44,113 +43,8 @@ failed_callback_logger = setup_logger_with_rotating_file_handler(
     backup_count=5,
 )
 
-
-def process_payment(
-    bunq_lib: BunqLib,
-    event_type: EventType,
-    callback_data: CallbackModel,
-) -> None:
-    """
-    Process a payment created notification and create a request in Bunq if the payment matches the rules.
-
-    Args:
-        bunq_lib (BunqLib): The BunqLib instance used for making payments.
-        event_type (EventType): The type of event.
-        callback_data (CallbackModel): The notification data.
-
-    Returns:
-        None
-    """
-    payment_data = TypeAdapter(PaymentType).validate_python(callback_data.NotificationUrl.object.root.Payment)
-
-    # Get the rules from the app session
-    rule_collections: dict[str, RuleModel] = current_app.config.get("RULES", {})
-
-    # Get or initialize the processed payments list
-    processed_payments: dict[int, list[str]] = RedisWrapper.get_secure("processed_payments") or {}
-    processed_payments.setdefault(bunq_lib.user_id, [])
-
-    # Check if the payment id is already in the processed payments list for the user
-    if payment_data.id in processed_payments[bunq_lib.user_id]:
-        logger.info(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Payment already processed")
-        return
-
-    processed_payments[bunq_lib.user_id].append(payment_data.id)
-
-    # Declare 'success' bool to check if any of the rules are successful
-    success = False
-
-    for rules_file, rules in rule_collections.items():
-        logger.debug(f"Processing rule: {rules_file}")
-
-        success, action, rule_name = process_rules(event_type=event_type, data=payment_data, rules=rules)
-
-        # If the rule is not successful or no action is found, continue to the next rule
-        if not success or action is None:
-            continue
-
-        # Register the processed payments list in Redis
-        if not action.dry_run or action.type.value == "DUMMY":
-            RedisWrapper.set_secure("processed_payments", processed_payments)
-
-        logger.info(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Payment matches '{rules_file}::{rule_name}'")
-
-        if action.type.value == "DUMMY":
-            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Dummy action")
-            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} account: {payment_data.alias.iban} ({payment_data.alias.display_name})")
-            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} counterparty: {payment_data.counterparty_alias.iban} ({payment_data.counterparty_alias.display_name})")
-            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} amount: {payment_data.amount.value} {payment_data.amount.currency}")
-            logger.debug(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} description: {payment_data.description}")
-
-            break
-
-        if action.type.value in ("FORWARD_PAYMENT", "FORWARD_INCOMING_PAYMENT"):
-            monetary_account_id = payment_data.monetary_account_id
-
-            # Create array of monetary account ids from accounts list
-            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
-
-            # If the monetary account id is found in the accounts list, create a request
-            if monetary_account_id in accounts.keys():
-                forward_payment_action_data = TypeAdapter(ForwardPaymentActionData).validate_python(action.data)
-
-                if action.type.value == "FORWARD_PAYMENT":
-                    action_forward_payment(bunq_lib=bunq_lib, action=forward_payment_action_data, payment=payment_data, dry_run=action.dry_run)
-                elif action.type.value == "FORWARD_INCOMING_PAYMENT":
-                    action_forward_incoming_payment(bunq_lib=bunq_lib, action=forward_payment_action_data, payment=payment_data, dry_run=action.dry_run)
-
-            break
-
-        if action.type.value == "REQUEST_FROM_PAYMENT":
-            monetary_account_id = payment_data.monetary_account_id
-
-            # Create array of monetary account ids from accounts list
-            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
-
-            # If the monetary account id is found in the accounts list, create a request
-            if monetary_account_id in accounts.keys():
-                create_request_action_data = TypeAdapter(CreateRequestActionData).validate_python(action.data)
-
-                action_request_from_payment(bunq_lib=bunq_lib, action=create_request_action_data, payment=payment_data, dry_run=action.dry_run)
-
-            break
-
-        if action.type.value == "FORWARD_REMAINING_BALANCE":
-            monetary_account_id = payment_data.monetary_account_id
-
-            # Create array of monetary account ids from accounts list
-            accounts = {account.id_: account for account in bunq_lib.get_all_accounts(only_active=True)}
-
-            # If the monetary account id is found in the accounts list, create a request
-            if monetary_account_id in accounts.keys():
-                forward_remaining_balance_action_data = TypeAdapter(ForwardRemainingBalanceActionData).validate_python(action.data)
-
-                action_forward_remaining_balance(bunq_lib=bunq_lib, action=forward_remaining_balance_action_data, payment=payment_data, dry_run=action.dry_run)
-
-            break
-
-    if not success:
-        logger.info(f"[/callback/{bunq_lib.user_id}] {event_type.value}::{payment_data.id} Payment did not match any rules")
+server_threads = []
+callback_threads = []
 
 
 @route("/health", methods=["GET"])
@@ -189,7 +83,7 @@ def callback(user_id: int):
 
     if user_id not in keys:
         logger.info(f"[/callback/{user_id}] Invalid user id: {user_id}")
-        return jsonify({"message": "Invalid user id"}), 400
+        return jsonify({"message": "Unkown user"}), 400
 
     try:
         request_data = request.get_json()
@@ -225,11 +119,8 @@ def callback(user_id: int):
 
         # Execute the handler function if it exists and pass the data object
         if handler is not None and callback_data is not None:
-            handler(
-                bunq_lib=current_app.config["BUNQ_CONFIGS"][user_id],
-                event_type=event_type,
-                callback_data=callback_data,
-            )
+            callback_threads.append(Thread(target=handler, kwargs={"app_context": current_app.app_context(), "user_id": user_id, "event_type": event_type, "callback_data": callback_data}))
+            callback_threads[-1].start()
         else:
             logger.info(f"[/callback/{user_id}] Unregistered event type {event_type.value}")
 
@@ -240,8 +131,8 @@ def callback(user_id: int):
 
         logger.info(f"[/callback/{user_id}] Schema mismatch: {request}")
 
-        # Return 200 to prevent Bunq callback api to retry the request
-        return jsonify({"message": "Schema mismatch"}), 200
+        # Return HTTP 400 if the callback data did not match the schema
+        return jsonify({"message": "Schema mismatch"}), 400
 
 
 class RuleFileChangeHandler(FileSystemEventHandler):
@@ -295,7 +186,7 @@ class RuleFileChangeHandler(FileSystemEventHandler):
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
 
-        self.debounce_timer = Timer(0.1, lambda: (Thread(target=load_rules_thread, args=(self.app, self.lock, self.event)).start(), logger.info("Rules changed, reloading rules"))[0])
+        self.debounce_timer = Timer(0.1, lambda: (load_rules_thread(app=self.app, lock=self.lock, schemas_loaded=self.event), logger.info("Rules changed, reloading rules"))[0])
         self.debounce_timer.start()
 
 
@@ -432,19 +323,22 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     observer.start()
 
     # Load schemas in a separate thread
-    Thread(target=load_schema_thread, args=(app, lock_app_config, rule_schemas_loaded, "rules")).start()
-    Thread(target=load_schema_thread, args=(app, lock_app_config, callback_schemas_loaded, "callback")).start()
+    server_threads.append(Thread(target=load_schema_thread, args=(app, lock_app_config, rule_schemas_loaded, "rules")))
+    server_threads.append(Thread(target=load_schema_thread, args=(app, lock_app_config, callback_schemas_loaded, "callback")))
 
     # Load rules in a separate thread
-    Thread(target=load_rules_thread, args=(app, lock_app_config, rule_schemas_loaded)).start()
+    server_threads.append(Thread(target=load_rules_thread, args=(app, lock_app_config, rule_schemas_loaded)))
 
     # Initialize BunqApp instances
-    Thread(target=load_config_thread, args=(app, lock_app_config, configurations_loaded)).start()
+    server_threads.append(Thread(target=load_config_thread, args=(app, lock_app_config, configurations_loaded)))
 
-    # Wait for the schemas to be loaded
-    rule_schemas_loaded.wait()
-    callback_schemas_loaded.wait()
-    configurations_loaded.wait()
+    # Start all threads
+    for thread in server_threads:
+        thread.start()
+
+    # Wait for all threads to complete
+    for thread in server_threads:
+        thread.join()
 
     # Register stored routes
     for rule, f, options in routes:

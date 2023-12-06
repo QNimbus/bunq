@@ -6,6 +6,7 @@
 import os
 import sys
 import socket
+from typing import Optional
 
 # Third-party imports
 from bunq.sdk.context.api_context import ApiContext
@@ -20,9 +21,11 @@ from libs.exceptions import ConfigFileExistsError, PathNotWritableError
 from libs.share_lib import ShareLib
 from libs.bunq_lib import (
     BunqLib,
+    Utilites,
     StatementFormat,
     RegionalFormat,
     RequestInquiryOptions,
+    PaymentOptions,
     CounterParty,
 )
 
@@ -128,6 +131,42 @@ class BunqApp:  # pylint: disable=too-few-public-methods
             self.remove_all_statements(config_file=config_file)
             return
 
+        if self.action == Action.CREATE_REQUEST:
+            raise NotImplementedError(f"Action '{self.action}' not implemented")
+
+        if self.action == Action.CREATE_PAYMENT:
+            if "config_file" not in kwargs or kwargs["config_file"] is None:
+                raise KeyError("The '--config-file' argument is required but was not provided.")
+            if "amount" not in kwargs or kwargs["amount"] is None:
+                raise KeyError("The 'amount' argument is required but was not provided.")
+            if "description" not in kwargs or kwargs["description"] is None:
+                raise KeyError("The 'description' argument is required but was not provided.")
+            if "source_iban" not in kwargs or kwargs["source_iban"] is None:
+                raise KeyError("The 'source_iban' argument is required but was not provided.")
+            if "destination_name" not in kwargs or kwargs["destination_name"] is None:
+                raise KeyError("The 'destination_name' argument is required but was not provided.")
+            if "destination_iban" not in kwargs or kwargs["destination_iban"] is None:
+                raise KeyError("The 'destination_iban' argument is required but was not provided.")
+
+            config_file = kwargs["config_file"]
+            amount = kwargs["amount"]
+            description = kwargs["description"]
+            source_iban = kwargs["source_iban"]
+            destination_name = kwargs["destination_name"]
+            destination_iban = kwargs["destination_iban"]
+            allow_third_party = kwargs["allow_third_party"]
+
+            self.create_payment(
+                config_file=config_file,
+                amount=amount,
+                description=description,
+                source_iban=source_iban,
+                destination_name=destination_name,
+                destination_iban=destination_iban,
+                allow_third_party=allow_third_party,
+            )
+            return
+
         raise NotImplementedError(f"Action '{self.action}' not implemented")
 
     def create_request(
@@ -149,6 +188,69 @@ class BunqApp:  # pylint: disable=too-few-public-methods
             counterparty=counterparty,
             options=options,
         )
+
+    def create_payment(
+        self,
+        *,
+        config_file: str,
+        amount: float,
+        description: str,
+        source_iban: Optional[str] = None,
+        monetary_account_id: Optional[int] = None,
+        destination_name: str,
+        destination_iban: str,
+        allow_third_party: bool = False,
+    ):
+        """
+        Create a payment transaction.
+
+        Args:
+            config_file (str): The path to the configuration file.
+            amount (float): The amount of the payment.
+            description (str): The description of the payment.
+            source_iban (str, optional): The IBAN of the source account. Either `source_iban` or `monetary_account_id` must be provided.
+            monetary_account_id (int, optional): The monetary account ID of the source account. Either `source_iban` or `monetary_account_id` must be provided.
+            destination_name (str): The name of the destination account.
+            destination_iban (str): The IBAN of the destination account.
+            allow_third_party (bool, optional): Flag indicating whether third-party payments are allowed. Defaults to False.
+
+        Raises:
+            ValueError: If the amount is not positive or if both or none of `source_iban` and `monetary_account_id` are provided.
+            ValueError: If the source account with the provided IBAN or monetary account ID is not found.
+
+        Returns:
+            None
+        """
+        # Ensure amount is positive
+        if amount <= 0:
+            raise ValueError(f"Amount must be positive, got {amount}")
+
+        if not (source_iban is None) != (monetary_account_id is None):
+            raise ValueError("Exactly one of 'source_iban' or 'monetary_account_id' must be provided, not both or none.")
+
+        bunq = BunqLib(self.is_production, config_file)
+        accounts_by_id = Utilites.get_accounts_by_monetary_account_id(bunq)
+        accounts_by_iban = Utilites.get_accounts_by_iban(bunq)
+
+        if not allow_third_party and destination_iban not in accounts_by_iban.keys():
+            raise ValueError(f"Destination account with IBAN '{destination_iban}' not found, if IBAN is correct, set '--allow-third-party' to allow third-party payments")
+
+        if monetary_account_id is not None:
+            if monetary_account_id not in accounts_by_id.keys():
+                raise ValueError(f"Source account with monetary account id '{monetary_account_id}' not found")
+        else:
+            if source_iban not in accounts_by_iban.keys():
+                raise ValueError(f"Source account with IBAN '{source_iban}' not found")
+            monetary_account_id = accounts_by_iban[source_iban].id_
+
+        payment_options: PaymentOptions = PaymentOptions(description=description, currency="EUR")
+        counterparty: CounterParty = CounterParty(name=destination_name, iban=destination_iban)
+
+        self.logger.info(
+            f"Attempting to create payment of {amount} from {source_iban} ({accounts_by_id[monetary_account_id].description}) to {destination_iban} ({destination_name}) with description '{description}'"
+        )
+
+        # bunq.make_payment(amount=amount, options=payment_options, counterparty=counterparty, monetary_account_id=monetary_account_id)
 
     def export(
         self,

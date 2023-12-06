@@ -20,4 +20,5 @@ class Action(Enum):
     SHOW_ACCOUNTS = "show-accounts"
     CREATE_CONFIG = "create-config"
     CREATE_REQUEST = "create-request"
+    CREATE_PAYMENT = "create-payment"
     REMOVE_ALL_STATEMENTS = "remove-all-statements"
