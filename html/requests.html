@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requests</title>
+    <style>
+        body {
+            background-color: #f1f1f1;
+        }
+
+        ul.object-list {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        ul.object-list li {
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Requests</h1>
+    <ul class="object-list">
+        {% for req_id, req in requests.items() %}
+        <li>
+            <strong>id: {{ req_id }}</strong>
+            <p>timestamp: {{ req.timestamp }}</p>
+            <p>method: {{ req.method }}</p>
+            <p>url: {{ req.url }}</p>
+            <p>client_ip: {{ req.client_ip }}</p>
+            {% if req.query_string %}
+            <p>query string: {{ req.query_string }}</p>
+            {% endif %}
+            {% if req.cookies %}
+            <p>cookies: {{ req.cookies }}</p>
+            {% endif %}
+            <p>headers: {{ req.headers }}</p>
+            <p>body: {{ req.body | tojson(indent=2) }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>

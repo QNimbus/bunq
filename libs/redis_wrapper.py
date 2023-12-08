@@ -5,10 +5,12 @@
 # Standard library imports
 import os
 import hmac
+import uuid
 import pickle
 import hashlib
 import inspect
 import functools
+from typing import Optional
 from abc import ABC, abstractmethod
 
 
@@ -177,6 +179,46 @@ class RedisWrapper:
             raise RuntimeError("Redis client is not initialized. Call Redis.initialize() first.")
 
     @classmethod
+    def generate_uuid(cls) -> str:
+        """
+        Generates a UUID using Redis.
+
+        Returns:
+            str: The generated UUID.
+        """
+        cls._ensure_initialized()
+        return str(uuid.uuid4())
+
+    @classmethod
+    def get_id(cls, name: Optional[str] = "_id") -> str:
+        """
+        Generates an incrementing ID using Redis. Starts at 0 if the ID doesn't exist.
+
+        Args:
+            name (str, optional): The name of the ID. Defaults to "_id".
+
+        Returns:
+            str: The name of the ID
+        """
+        cls._ensure_initialized()
+        return cls._client.incr(name=name)
+
+    @classmethod
+    def get_lock(cls, name: Optional[str] = "redis_lock", timeout: Optional[float] = None) -> bool:
+        """
+        Acquires a lock using Redis.
+
+        Args:
+            name (str, optional): The name of the lock. Defaults to "redis_lock".
+            timeout (float, optional): The timeout in seconds. Defaults to 60.
+
+        Returns:
+            bool: True if the lock was acquired, False otherwise.
+        """
+        cls._ensure_initialized()
+        return cls._client.lock(name=name, timeout=timeout)
+
+    @classmethod
     def get(cls, key):
         """
         Get the value associated with the given key from Redis.
@@ -185,7 +227,7 @@ class RedisWrapper:
             key (str): Redis key.
 
         Returns:
-            Any: The retrieved value
+            any: The retrieved value
         """
         cls._ensure_initialized()
         value = cls._client.get(name=key)
@@ -204,7 +246,7 @@ class RedisWrapper:
             key (str): The key to retrieve the value from Redis.
 
         Returns:
-            Any: The retrieved value if the signature matches.
+            any: The retrieved value if the signature matches.
 
         Raises:
             SecurityError: If the signature doesn't match.
@@ -231,7 +273,7 @@ class RedisWrapper:
 
         Args:
             key (str): Redis key.
-            value (Any): Value to be set. It can be of any type.
+            value (any): Value to be set. It can be of any type.
         """
         # Generate HMAC signature
         signature = hmac.new(REDIS_HMAC_SECRET_KEY.encode(), pickle.dumps(value), hashlib.sha256).hexdigest()
@@ -246,7 +288,7 @@ class RedisWrapper:
 
         Args:
             key (str): Redis key.
-            value (Any): Value to be set. It can be of any type.
+            value (any): Value to be set. It can be of any type.
             expiration_time (int): Expiration time in seconds.
         """
         # Generate HMAC signature
@@ -262,7 +304,7 @@ class RedisWrapper:
 
         Args:
             key (str): Redis key.
-            value (Any): Value to be set. It can be of any type.
+            value (any): Value to be set. It can be of any type.
         """
         cls._ensure_initialized()
         cls._client.set(name=key, value=pickle.dumps(value))
@@ -274,7 +316,7 @@ class RedisWrapper:
 
         Args:
             key (str): Redis key.
-            value (Any): Value to be set. It can be of any type.
+            value (any): Value to be set. It can be of any type.
             expiration_time (int): Expiration time in seconds.
         """
         cls._ensure_initialized()

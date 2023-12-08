@@ -4,6 +4,7 @@
 import os
 import json
 from pathlib import Path
+from datetime import datetime
 from threading import Thread, Lock, Event, Timer
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -12,19 +13,19 @@ from watchdog.observers import Observer
 from pydantic import TypeAdapter
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from flask import Flask, jsonify, request, current_app
+from flask import Flask, jsonify, request, render_template, current_app
 
 # Local application/library imports
 from libs.bunq_lib import BunqLib
 from libs.rules import load_rules
 from libs.payment import process_payment
 from libs.decorator import route, routes
+from libs.redis_wrapper import RedisWrapper
 from libs.exceptions import RuleProcessingError, BunqLibError
-from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware
+from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware, RequestLoggerMiddleware, RequestLoggerCallbackData
 from libs.logger import setup_logger, setup_logger_with_rotating_file_handler
 from schema.rules_model import RuleModel
 from schema.callback_model import CallbackModel
-
 
 # Setup logging
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
@@ -59,6 +60,25 @@ def health():
     - JSON response with a success message.
     """
     return jsonify({"message": "Success"}, 200)
+
+
+@route("/requests", methods=["GET"])
+def requests():
+    """
+    Handles request log requests via HTTP GET.
+
+    Parameters:
+    - None
+
+    Returns:
+    - HTML response with a list of request ids.
+    """
+    request_log = RedisWrapper.get("request_log") or []
+
+    # Get the request data from the Redis database using the request ids in 'request_log'
+    requests = {request_id: RedisWrapper.get_secure(request_id) for request_id in request_log}
+
+    return render_template("requests.html", requests=requests)
 
 
 @route("/callback/<int:user_id>", methods=["POST"])
@@ -287,6 +307,47 @@ def load_schema_thread(app: Flask, lock: Lock, schema_loaded: Event, schema_name
         logger.error(error)
 
 
+def register_request_thread(request_id: str) -> None:
+    """
+    Register a request in the Redis database.
+
+    Args:
+        app (Flask): The Flask application object.
+        lock (Lock): A lock object used for thread synchronization.
+        request_id (str): The request id.
+
+    Returns:
+        None
+    """
+    with RedisWrapper.get_lock():
+        request_log = RedisWrapper.get("request_log") or []
+        request_log.append(request_id)
+        RedisWrapper.set("request_log", request_log)
+
+
+def request_logger(request_data: RequestLoggerCallbackData):
+    """
+    Callback function for the RequestLoggerMiddleware.
+
+    Args:
+        request_data (RequestLoggerCallbackData): The request dict.
+
+    Returns:
+        None
+    """
+    # Add property 'timestamp' to the request data
+    request_data["timestamp"] = datetime.utcnow()
+
+    # Generate a unique id for the request
+    request_id = RedisWrapper.generate_uuid()
+
+    RedisWrapper.set_secure(request_id, request_data)
+
+    # Register the request in a separate thread
+    server_threads.append(Thread(target=register_request_thread, args=(request_id,)))
+    server_threads[-1].start()
+
+
 def create_server(allowed_ips: list[str] = None) -> Flask:
     """
     Starts the Flask server.
@@ -297,7 +358,7 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     logger.info("Starting server")
 
     # Create the Flask application
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder="html")
     lock_app_config = Lock()
 
     if allowed_ips is None:
@@ -351,6 +412,8 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
         trust_proxy=True,
         public_routes=["/health"],
     )
+
+    app.wsgi_app = RequestLoggerMiddleware(app=app.wsgi_app, route_regex="^/callback/\\d{1,9}$", callback=request_logger)
 
     # If environment variable 'LOG_LEVEL' is set to 'DEBUG', enable the DebugLogMiddleware
     if os.environ.get("LOG_LEVEL", None) == "DEBUG":
