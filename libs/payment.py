@@ -6,10 +6,9 @@ from threading import Lock
 
 # Third-party imports
 from typing import Optional
-from flask import current_app
-from flask.ctx import AppContext
 from pydantic import TypeAdapter
-from bunq.sdk.model.generated.endpoint import MonetaryAccountBank, MonetaryAccountJoint, MonetaryAccountSavings
+from flask.ctx import AppContext
+from flask import current_app, request
 
 # Local application/library imports
 from libs.bunq_lib import BunqLib, Utilites
@@ -130,19 +129,26 @@ class _LocalUtilities:
         return True, action
 
 
-def process_payment(app_context: AppContext, user_id: int, event_type: EventType, callback_data: CallbackModel) -> None:
+def process_payment(*, app_context: AppContext, user_id: int, request_id: str, event_type: EventType, callback_data: CallbackModel) -> None:
     """
     Process a payment created notification and create a request in Bunq if the payment matches the rules.
 
     Args:
         app_context (AppContext): The Flask application context.
         user_id (int): The ID of the user.
+        request_id (str): The ID of the request.
         event_type (EventType): The type of event.
         callback_data (CallbackModel): The notification data.
 
     Returns:
         None
+
+    Raises:
+        RuntimeError: If the request ID is not set in the request.
     """
+    if request_id is None:
+        raise RuntimeError(f"Request id not set in request: {request}")
+
     app_context.push()
 
     # Declare 'success' bool to check if any of the rules are successful
@@ -168,6 +174,20 @@ def process_payment(app_context: AppContext, user_id: int, event_type: EventType
         success, action = _LocalUtilities.process_rule_collection(rules, event_type, payment_data, user_id)
         if success:
             break
+
+    # Log success to request logger in Redis
+    with RedisWrapper.get_lock():
+        # Get request_log from Redis. If it does not exist, throw an error
+        current_request = RedisWrapper.get_secure(request_id)
+
+        if current_request is None:
+            raise RuntimeError(f"Request id not found in request_log: {request_id}")
+
+        # Update the request log with the success of the request
+        current_request["success"] = success
+        current_request["event"] = event_type.value
+        current_request["action"] = action.type.value if action is not None else None
+        RedisWrapper.set_secure(request_id, current_request)
 
     if not success:
         logger.info(f"[/callback/{user_id}] {event_type.value}::{payment_data.id} Payment did not match any rules")

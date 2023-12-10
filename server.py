@@ -3,6 +3,7 @@
 # Standard library imports
 import os
 import json
+import base64
 from pathlib import Path
 from datetime import datetime
 from threading import Thread, Lock, Event, Timer
@@ -19,7 +20,7 @@ from flask import Flask, jsonify, request, render_template, current_app
 from libs.bunq_lib import BunqLib
 from libs.rules import load_rules
 from libs.payment import process_payment
-from libs.decorator import route, routes
+from libs.decorator import route, routes, before_request_funcs, before_request as before_request_decorator
 from libs.redis_wrapper import RedisWrapper
 from libs.exceptions import RuleProcessingError, BunqLibError
 from libs.middleware import AllowedIPsMiddleware, DebugLogMiddleware, RequestLoggerMiddleware, RequestLoggerCallbackData
@@ -76,9 +77,76 @@ def requests():
     request_log = RedisWrapper.get("request_log") or []
 
     # Get the request data from the Redis database using the request ids in 'request_log'
-    requests = {request_id: RedisWrapper.get_secure(request_id) for request_id in request_log}
+    logged_requests = {request_id: RedisWrapper.get_secure(request_id) for request_id in request_log}
 
-    return render_template("requests.html", requests=requests)
+    # Iterate over the requests
+    for request_data in logged_requests.values():
+        # Iterate over the request properties
+        for key, value in request_data.items():
+            # Encode the value to base64 if it is a dict so it's not displayed as a string in the HTML
+            # Encode datetime objects to a string
+            # Pass the rest of the values as-is
+            try:
+                if isinstance(value, dict):
+                    request_data[key] = base64.b64encode(json.dumps(value).encode("utf-8")).decode("utf-8")
+                elif isinstance(value, datetime):
+                    request_data[key] = value.strftime("%d-%m-%Y %H:%M:%S")
+            except TypeError:
+                pass
+
+    return render_template("requests.html", requests=logged_requests)
+
+
+@route("/replay/<request_uuid>", methods=["GET"])
+def replay(request_uuid: str):
+    """
+    Handles replay requests via HTTP GET.
+
+    Parameters:
+    - request_uuid (str): The request id.
+
+    Returns:
+    - JSON response with a success message.
+    """
+    request_data = RedisWrapper.get_secure(request_uuid)
+
+    user_id = int(request_data["url"].split("/")[-1])
+
+    # callback(user_id)
+
+    # # Log the json data
+    # callback_logger.info(json.dumps(request_data))
+
+    # callback_data = TypeAdapter(CallbackModel).validate_python(request_data)
+    # event_type = callback_data.NotificationUrl.event_type
+
+    # # Dictionary to simulate a switch/case structure
+    # switcher = {
+    #     "PAYMENT_CREATED": process_payment,
+    #     "PAYMENT_RECEIVED": process_payment,
+    #     "MUTATION_CREATED": process_payment,
+    #     "MUTATION_RECEIVED": process_payment,
+    #     "CARD_PAYMENT_ALLOWED": None,
+    #     "CARD_TRANSACTION_NOT_ALLOWED": None,
+    #     "REQUEST_INQUIRY_CREATED": None,
+    #     "REQUEST_INQUIRY_ACCEPTED": None,
+    #     "REQUEST_INQUIRY_REJECTED": None,
+    #     "REQUEST_RESPONSE_CREATED": None,
+    #     "REQUEST_RESPONSE_ACCEPTED": None,
+    #     "REQUEST_RESPONSE_REJECTED": None,
+    # }
+
+    # # Get the function from switcher dictionary
+    # handler = switcher.get(event_type.value, None)
+
+    # # Execute the handler function if it exists and pass the data object
+    # if handler is not None and callback_data is not None:
+    #     callback_threads.append(Thread(target=handler, kwargs={"app_context": current_app.app_context(), "user_id": 0, "event_type": event_type, "callback_data": callback_data}))
+    #     callback_threads[-1].start()
+    # else:
+    #     logger.info(f"[/replay/{request_uuid}] Unregistered event type {event_type.value}")
+
+    return jsonify({"message": "Success"})
 
 
 @route("/callback/<int:user_id>", methods=["POST"])
@@ -139,7 +207,11 @@ def callback(user_id: int):
 
         # Execute the handler function if it exists and pass the data object
         if handler is not None and callback_data is not None:
-            callback_threads.append(Thread(target=handler, kwargs={"app_context": current_app.app_context(), "user_id": user_id, "event_type": event_type, "callback_data": callback_data}))
+            callback_threads.append(
+                Thread(
+                    target=handler, kwargs={"app_context": current_app.app_context(), "user_id": user_id, "request_id": request.request_id, "event_type": event_type, "callback_data": callback_data}
+                )
+            )
             callback_threads[-1].start()
         else:
             logger.info(f"[/callback/{user_id}] Unregistered event type {event_type.value}")
@@ -153,6 +225,18 @@ def callback(user_id: int):
 
         # Return HTTP 400 if the callback data did not match the schema
         return jsonify({"message": "Schema mismatch"}), 400
+
+
+@before_request_decorator
+def before_request():
+    """
+    A function that is executed before each request.
+
+    Returns:
+        None
+    """
+    # Set the request id in the Flask Request object
+    setattr(request, "request_id", request.environ.get("request_id", None))
 
 
 class RuleFileChangeHandler(FileSystemEventHandler):
@@ -307,25 +391,7 @@ def load_schema_thread(app: Flask, lock: Lock, schema_loaded: Event, schema_name
         logger.error(error)
 
 
-def register_request_thread(request_id: str) -> None:
-    """
-    Register a request in the Redis database.
-
-    Args:
-        app (Flask): The Flask application object.
-        lock (Lock): A lock object used for thread synchronization.
-        request_id (str): The request id.
-
-    Returns:
-        None
-    """
-    with RedisWrapper.get_lock():
-        request_log = RedisWrapper.get("request_log") or []
-        request_log.append(request_id)
-        RedisWrapper.set("request_log", request_log)
-
-
-def request_logger(request_data: RequestLoggerCallbackData):
+def request_logger(environ: dict, request_data: RequestLoggerCallbackData):
     """
     Callback function for the RequestLoggerMiddleware.
 
@@ -335,16 +401,35 @@ def request_logger(request_data: RequestLoggerCallbackData):
     Returns:
         None
     """
+
+    def _register_request_thread(request_id: str) -> None:
+        """
+        Register a request in the Redis database.
+
+        Args:
+            app (Flask): The Flask application object.
+            lock (Lock): A lock object used for thread synchronization.
+            request_id (str): The request id.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock():
+            request_log = RedisWrapper.get("request_log") or []
+            request_log.append(request_id)
+            RedisWrapper.set("request_log", request_log)
+
     # Add property 'timestamp' to the request data
     request_data["timestamp"] = datetime.utcnow()
 
-    # Generate a unique id for the request
+    # Generate a unique id for the request and store in Flask Request object
     request_id = RedisWrapper.generate_uuid()
+    environ["request_id"] = request_id
 
     RedisWrapper.set_secure(request_id, request_data)
 
     # Register the request in a separate thread
-    server_threads.append(Thread(target=register_request_thread, args=(request_id,)))
+    server_threads.append(Thread(target=_register_request_thread, kwargs={"request_id": request_id}))
     server_threads[-1].start()
 
 
@@ -368,6 +453,9 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
             allowed_ips = os.environ.get("ALLOWED_IPS").split(",")
 
     logger.info(f"Allowed IPs: {allowed_ips}")
+
+    # TODO: Remove in production
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     # Set the paths for the rules and configuration files
     app.config["CONF_DIR"] = Path(__file__).parent / "conf"
@@ -404,6 +492,10 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     # Register stored routes
     for rule, f, options in routes:
         app.route(rule, **options)(f)
+
+    # Register the before request functions
+    for f in before_request_funcs:
+        app.before_request(f)
 
     # Register middlewares
     app.wsgi_app = AllowedIPsMiddleware(

@@ -51,3 +51,26 @@ To generate the rules collection model from the schema, run the following comman
 To generate the callback model from the schema, run the following command:
 
 `datamodel-codegen --input-file-type jsonschema --input schema/callback.schema.json --output-model-type pydantic_v2.BaseModel --output schema/callback_model.py --class-name CallbackModel --use-title-as-name --disable-appending-item-suffix`
+
+## Miscelaneous
+
+To concatenate all the log files into a single log file, run the following command:
+
+```
+# This command will concatenate all the log files into a single log file
+
+$ find logs/ -type f -name "*.log" \( ! -name 'all.log' -a ! -name 'mutation.log' -a ! -name 'payment.log' -a ! -name 'request.log' -a ! -name 'misc.log' \) -print0 | xargs -0 cat >> logs/all.log
+
+# This command wille remove the previously concatenated log files
+
+$ find logs/ -type f -name "*.log" \( ! -name 'mutation.log' -a ! -name 'payment.log' -a ! -name 'request.log' -a ! -name 'misc.log' -a ! -name 'all.log' \) -print0 | xargs -0 rm
+```
+
+These commands will grab all specific log entries into their respective log files:
+
+```
+$ grep -h logs/all.log -e "\"category\": \"MUTATION\"" > logs/mutation.log
+$ grep -h logs/all.log -e "\"category\": \"PAYMENT\"" > logs/payment.log
+$ grep -h logs/all.log -e "\"category\": \"REQUEST\"" > logs/request.log
+$ grep -h logs/all.log -e "\"category\": \"CARD_TRANSACTION_SUCCESSFUL\"" -e "<ANOTHER-CATEGORY>" > logs/misc.log
+```

@@ -35,14 +35,14 @@ def action_transfer_incoming_payment(bunq_lib: BunqLib, action: TransferIncoming
     description = payment.description
     amount = float(payment.amount.value)
     counterparty = CounterParty(
-        name=action.forward_payment_to.name,
-        iban=action.forward_payment_to.iban,
+        name=action.transfer_payment_to.name,
+        iban=action.transfer_payment_to.iban,
     )
 
     # Create a list comprehension of all the IBAN numbers of the accounts that are allowed to receive the remaining balance.
     own_accounts = [alias.value for id in accounts.keys() for alias in accounts[id].alias if hasattr(alias, "type_") and alias.type_ == "IBAN"]
 
-    if action.only_allow_own_accounts and action.forward_payment_to.iban not in own_accounts:
+    if action.only_allow_own_accounts and action.transfer_payment_to.iban not in own_accounts:
         logger.info(f"[/callback/{bunq_lib.user_id}] TRANSFER_INCOMING_PAYMENT::{payment.id} is restricted to own accounts ({action.forward_payment_to.iban})")
         return
 
@@ -51,7 +51,7 @@ def action_transfer_incoming_payment(bunq_lib: BunqLib, action: TransferIncoming
         return
 
     if action.description is not None:
-        description = f"{action.description} -> {action.forward_payment_to.name} - {description}"
+        description = f"{action.description} -> {action.transfer_payment_to.name} - {description}"
 
     request_data = {
         "amount": amount,

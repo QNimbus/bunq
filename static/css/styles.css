@@ -1,0 +1,171 @@
+:root {
+    /* CSS HSL */
+    --night: #161316ff;
+    --cerulean: hsla(197, 39%, 43%, 1);
+    --bone: hsla(53, 21%, 83%, 1);
+    --old-lace: hsla(47, 47%, 93%, 1);
+    --space-cadet: hsla(231, 24%, 22%, 1);
+
+
+    --modal-transition-duration: 0.3s;
+}
+
+body {
+    font-family: Roboto, sans-serif;
+    font-size: clamp(10px, calc(0.5rem + 0.5vw), 18px);
+    line-height: 1.6;
+    padding: 1.2rem;
+    background-color: whitesmoke;
+    color: var(--night);
+}
+
+@media screen and (max-width: 600px) {
+    body {
+        padding: 0.7rem;
+    }
+
+    .modal-content {
+        width: 95%;
+    }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 600;
+}
+
+.pure-table {
+    width: 100%;
+    border: unset;
+    border-collapse: separate;
+    border-spacing: unset;
+}
+
+
+.pure-table td,
+.pure-table th {
+    padding: 12px;
+}
+
+.pure-table tr.main-row.highlight,
+.pure-table tr.detail-row.highlight {
+    background-color: var(--bone);
+}
+
+td:hover {
+    cursor: pointer;
+}
+
+.pure-table thead th {
+    background-color: var(--space-cadet);
+    color: var(--old-lace);
+    padding: 18px;
+    font-size: clamp(12px, calc(0.7rem + 0.5vw), 20px);
+}
+
+.ellipsis {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    word-wrap: break-word;
+    cursor: pointer;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Black w/ opacity */
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: var(--old-lace);
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid var(--cerulean);
+    width: 80%;
+    opacity: 0;
+    /* Start hidden */
+    transform: scale(0.9);
+    /* Start slightly smaller */
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal-content.show {
+    opacity: 1;
+    /* Make visible */
+    transform: scale(1);
+    /* Scale up */
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.pure-button {
+    background-color: var(--cerulean);
+    color: var(--old-lace);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.pure-button:hover {
+    background-color: var(--space-cadet);
+    /* Darken on hover */
+}
+
+.close {
+    color: var(--night);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: var(--space-cadet);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+td {
+    border-bottom: 1px solid var(--space-cadet);
+}
+
+tr.detail-row {
+    display: none;
+}
+
+tr.detail-row.visible {
+    display: table-row;
+    /* Change to visible when this class is added */
+}
+
+/* utility classes */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.m-1 {
+    margin: 1rem;
+}
+
+.p-1 {
+    padding: 1rem;
+}

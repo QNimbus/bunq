@@ -11,6 +11,7 @@ logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 routes = []  # Global variable to store the routes
+before_request_funcs = []  # Global variable to store the before request functions
 
 
 def route(rule: str, **options):
@@ -31,3 +32,9 @@ def route(rule: str, **options):
         return f
 
     return decorator
+
+
+def before_request(f):
+    # Store the function as a before request function
+    before_request_funcs.append(f)
+    return f

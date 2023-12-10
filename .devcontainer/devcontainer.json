@@ -19,10 +19,10 @@
 		"vscode": {
 			"extensions": [
 				"ms-python.black-formatter",
-				"philnash.ngrok-for-vscode",
 				"vsls-contrib.gistfs",
 				"ms-python.pylint",
-				"GitHub.copilot"
+				"GitHub.copilot",
+				"esbenp.prettier-vscode"
 			],
 			"settings": {
 				"dev.containers.copyGitConfig": true,
@@ -52,6 +52,9 @@
 		},
 		"ghcr.io/devcontainers-contrib/features/chisel:1": {
 			"version": "latest"
+		},
+		"ghcr.io/devcontainers-contrib/features/npm-package:1.0.3": {
+			"package": "stylelint"
 		}
 	},
 	"postCreateCommand": {

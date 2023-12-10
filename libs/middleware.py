@@ -21,7 +21,7 @@ from libs.exceptions import InvalidIPAddressError
 logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 # Define a type for the function signature
-RequestLoggerCallbackData = dict[str, any]
+RequestLoggerCallbackData = dict[any, any], dict[str, any]
 RequestLoggerCallback = Callable[[RequestLoggerCallbackData], None]
 
 # Define a type for the route_regex
@@ -242,7 +242,7 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
         else:
             self.route_regex = route_regex
 
-    def __call__(self, environ, start_response):
+    def __call__(self, environ: dict, start_response: callable):
         """
         Call method to handle the incoming request.
 
@@ -297,7 +297,7 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
 
         # Call the callback with the headers and body, or log them
         if self.callback and callable(self.callback):
-            self.callback(request_data)
+            self.callback(environ, request_data)
         else:
             print(f"Request received:\nHeaders - {request_headers}\nBody -\n{_pretty_print_request_body(request_body)}")
 
