@@ -1,20 +1,18 @@
 # decorator.py
 
 # Standard library imports
-import os
+from typing import Callable
 
 # Local application/library imports
-from libs.logger import setup_logger
-
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
-routes = []  # Global variable to store the routes
-before_request_funcs = []  # Global variable to store the before request functions
+routes: list[tuple[str, Callable, dict[str, any]]] = []  # Global variable to store the routes
+before_request_funcs: list[Callable] = []  # Global variable to store the before request functions
+after_request_funcs: list[Callable] = []  # Global variable to store the after request functions
+error_handlers: dict[int, Callable] = {}  # Global variable to store the error handlers
 
 
-def route(rule: str, **options):
+def route(rule: str, **options: dict[str, any]) -> Callable[[Callable], Callable]:
     """
     A decorator function that stores the function and its associated route information.
 
@@ -26,15 +24,54 @@ def route(rule: str, **options):
         The decorated function.
     """
 
-    def decorator(f):
-        # Store the function and its associated route information
+    def decorator(f: Callable) -> Callable:
         routes.append((rule, f, options))
         return f
 
     return decorator
 
 
-def before_request(f):
-    # Store the function as a before request function
+def before_request(f: Callable) -> Callable:
+    """
+    A decorator function that stores the function as a before request function.
+
+    Args:
+        f: The function to be stored.
+
+    Returns:
+        The decorated function.
+    """
     before_request_funcs.append(f)
     return f
+
+
+def after_request(f: Callable) -> Callable:
+    """
+    A decorator function that stores the function as an after request function.
+
+    Args:
+        f: The function to be stored.
+
+    Returns:
+        The decorated function.
+    """
+    after_request_funcs.append(f)
+    return f
+
+
+def error_handler(code: int) -> Callable[[Callable], Callable]:
+    """
+    A decorator function that stores the function as an error handler.
+
+    Args:
+        code: The error code to be handled.
+
+    Returns:
+        The decorated function.
+    """
+
+    def decorator(f: Callable):
+        error_handlers[code] = f
+        return f
+
+    return decorator

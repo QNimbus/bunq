@@ -1,20 +1,16 @@
 # actions.py
 
 # Standard library imports
-import os
 import math
 
 # Third-party imports
 # ...
 
 # Local application/library imports
-from libs.logger import setup_logger
+from . import logger
 from libs.bunq_lib import BunqLib, CounterParty, RequestInquiryOptions, PaymentOptions
 from schema.rules_model import TransferRemainingBalanceActionData, TransferIncomingPaymentActionData, RequestFromExpenseActionData
 from schema.callback_model import PaymentType
-
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 def action_transfer_incoming_payment(bunq_lib: BunqLib, action: TransferIncomingPaymentActionData, payment: PaymentType, dry_run: bool = False) -> None:

@@ -10,6 +10,8 @@ conf/*
 data/*
 logs/*
 
+users.json
+
 docker-compose.yaml
 
 # Exported statements
@@ -46,5 +48,7 @@ coverage.xml
 
 # Local development settings
 .env
+.env*
+!*.example
 venv/
 .idea/

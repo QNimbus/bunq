@@ -27,7 +27,7 @@ from bunq.sdk.model.generated.endpoint import (
 )
 
 # Local application/library imports
-from libs.logger import setup_logger
+from . import logger
 from libs.redis_wrapper import redis_memoize, JsonSerializer
 from libs.exceptions import (
     BunqLibError,
@@ -39,8 +39,6 @@ from libs.exceptions import (
 
 # Constants
 REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24  # 24 hours
-
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 class MonetaryAccountSerializer(JsonSerializer):

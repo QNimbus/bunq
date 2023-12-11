@@ -9,13 +9,10 @@ import datetime
 # ...
 
 # Local application/library imports
-from libs.logger import setup_logger
+from . import logger
 from libs.app_actions import Action
 
 DEFAULT_BUNQ_CONFIGURATION_FILE_NAME = ".bunq.conf"
-
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 def parse_date(date_str):

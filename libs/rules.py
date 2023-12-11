@@ -1,7 +1,6 @@
 # rules.py
 
 # Standard library imports
-import os
 import re
 import json
 from typing import Union
@@ -12,7 +11,7 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
 # Local application/library imports
-from libs.logger import setup_logger
+from . import logger
 from libs.exceptions import RuleProcessingError
 from schema.rules_model import Action, PropertyRuleType, BalanceRuleType, RuleCondition, RuleModel, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
 from schema.callback_model import (
@@ -22,9 +21,6 @@ from schema.callback_model import (
     RequestResponseType,
     MasterCardActionType,
 )
-
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 # Load rules from JSON file and validate against schema

@@ -1,5 +1,3 @@
-#!/usr/bin/env -S python -W ignore
-
 # logger.py
 
 # Standard library imports
@@ -30,7 +28,7 @@ class ColoredFormatter(logging.Formatter):
         log_message = super().format(record)
         color = self.COLORS.get(record.levelname, "white")
         pid = os.getpid()
-        log_message = f"[PID: {pid}] {log_message}"
+        log_message = f"[PID: {pid}] [%(filename)s] {log_message}"
         return colored(log_message, color)
 
 
@@ -65,12 +63,12 @@ def setup_logger(name: str, log_level: str = "DEBUG", use_color: bool = False) -
 
         if use_color:
             formatter = ColoredFormatter(
-                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] %(message)s",
+                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] [%(filename)s] %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S %z",
             )
         else:
             formatter = logging.Formatter(
-                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] %(message)s",
+                fmt=f"[%(asctime)s] [{pid}] [%(levelname)s] [%(filename)s] %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S %z",
             )
 

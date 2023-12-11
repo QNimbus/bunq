@@ -125,7 +125,7 @@
             "type": "python",
             "request": "launch",
             "module": "gunicorn",
-            "envFile": "${workspaceFolder}/.env",
+            "envFile": "${workspaceFolder}/.env-dev",
             "args": [
                 "--workers=1",
                 "--timeout=0", // This disables the timeout, useful for debugging

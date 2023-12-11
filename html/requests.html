@@ -1,71 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
-        integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
-    <script src="/static/js/script.js"></script>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <title>Requests</title>
-</head>
-
-<body>
-
-    <h2>HTTP Request Data</h2>
+{% extends 'inc/base.html' %}
+{% block title %}HTTP Request Data{% endblock %}
+{% block head %}
+{{ super() }}
+<script src="/static/js/ajax.js"></script>
+{% endblock %}
+{% block content %}
+<div id="requests">
+  <h1>HTTP Request Data</h1>
+  <div id="table">
     <table class="pure-table pure-table-horizontal">
-        <thead>
-            <tr>
-                <!-- <th>UUID</th> -->
-                <th>Timestamp</th>
-                <th>Success</th>
-                <th>Callback type</th>
-                <th>URL</th>
-                <th class="text-right">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for uuid, request in requests.items() %}
-            <tr class="main-row">
-                <td>{{ request.timestamp }}</td>
-                <td>
-                    {% if request.success %}
-                    <i class="fa fa-check" aria-hidden="true"></i>
-                    {% endif %}
-                </td>
-                <td>{{ request.event }}</td>
-                <td>{{ request.url }}</td>
-                <td class="text-right">
-                    <div class="button-secondary pure-button" data-modal-title="Headers"
-                        data-modal-content="{{ request.headers }}">View Headers</div>
-                    <div class="button-secondary pure-button" data-modal-title="Body data"
-                        data-modal-content="{{ request.body }}">View Body</div>
-                    <div class="button-success pure-button"
-                        onclick="event.stopPropagation(); location.href='/replay/{{uuid}}';">Replay HTTP
-                        request</div>
-                </td>
-            </tr>
-            <tr class="detail-row">
-                <td colspan="5">
-                    <p>Client ip: {{ request.client_ip }}</p>
-                    <p>Cookies: <span class="encodedData">{{ request.cookies }}</span></p>
-                    <p>Query string: <span class="encodedData">{{ request.query_string }}</span></p>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <!-- The Modal -->
-    <div id="detailModal" class="modal">
-        <!-- Modal content -->
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <p id="modal-text">Header details will appear here.</p>
-        </div>
-    </div>
-</body>
+      <thead>
+        <tr>
+          <th class="fixed-width-20"></th>
+          <th class="fixed-width-20 text-center"><input type="checkbox" /></th>
+          <th>Time</th>
+          <th class="text-center">Result</th>
+          <th>User</th>
+          <th class="fixed-width-240">Action</th>
+          <th>Callback type</th>
+          <th class="fixed-width-150 text-right">Actions</th>
+        </tr>
+      </thead>
 
-</html>
+      <tbody id="request-table-body"></tbody>
+
+
+    </table>
+  </div>
+  <div id="pagination">
+    <button id="prev-page">Previous</button>
+    <span id="page-numbers"></span>
+    <button id="next-page">Next</button>
+  </div>
+  <!-- The Modal -->
+  <div id="detailModal" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <p id="modal-text">Header details will appear here.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

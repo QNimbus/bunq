@@ -7,6 +7,7 @@ import os
 import hmac
 import uuid
 import pickle
+import secrets
 import hashlib
 import inspect
 import functools
@@ -18,14 +19,11 @@ from abc import ABC, abstractmethod
 import redis
 
 # Local application/library imports
-from libs.logger import setup_logger
 from libs.exceptions import RedisMemoizeError, RedisMemoizeRuntimeError, SecurityError
 
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 # Get HMAC secret key from environment variable
-REDIS_HMAC_SECRET_KEY = os.environ.get("REDIS_HMAC_SECRET_KEY", None)
+REDIS_HMAC_SECRET_KEY = os.environ.get("REDIS_HMAC_SECRET_KEY", secrets.token_hex(32)).encode("utf-8")
 
 # Get Redis connection details from environment variables
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
@@ -259,7 +257,7 @@ class RedisWrapper:
         result, stored_signature = pickle.loads(value)
 
         # Recompute the signature and compare
-        computed_signature = hmac.new(REDIS_HMAC_SECRET_KEY.encode(), pickle.dumps(result), hashlib.sha256).hexdigest()
+        computed_signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(result), hashlib.sha256).hexdigest()
         if hmac.compare_digest(computed_signature, stored_signature):
             return result
 
@@ -276,7 +274,7 @@ class RedisWrapper:
             value (any): Value to be set. It can be of any type.
         """
         # Generate HMAC signature
-        signature = hmac.new(REDIS_HMAC_SECRET_KEY.encode(), pickle.dumps(value), hashlib.sha256).hexdigest()
+        signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
 
         # Store the value and signature as a tuple
         RedisWrapper.set(key=key, value=pickle.dumps((value, signature)))
@@ -292,7 +290,7 @@ class RedisWrapper:
             expiration_time (int): Expiration time in seconds.
         """
         # Generate HMAC signature
-        signature = hmac.new(REDIS_HMAC_SECRET_KEY.encode(), pickle.dumps(value), hashlib.sha256).hexdigest()
+        signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
 
         # Store the value and signature as a tuple
         RedisWrapper.setex(key=key, expiration_time=expiration_time, value=pickle.dumps((value, signature)))
@@ -340,6 +338,155 @@ class RedisWrapper:
         """
         cls._ensure_initialized()
         cls._client.flushdb()
+
+    # Helper methods
+
+    @classmethod
+    def log_request(cls, *, request_id: str) -> None:
+        """
+        Logs a request ID to Redis in a thread-safe manner.
+
+        Args:
+            request_id (str): The request ID to log.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock("request_log_lock"):
+            request_log = RedisWrapper.get("request_log") or []
+            request_log.append(request_id)
+            RedisWrapper.set("request_log", request_log)
+
+    @classmethod
+    def get_request_log(cls) -> list:
+        """
+        Gets the request log.
+
+        Returns:
+            list: The request log.
+        """
+        with RedisWrapper.get_lock("request_log_lock"):
+            return RedisWrapper.get("request_log") or []
+
+    @classmethod
+    def get_processed_payments_for_user(cls, *, user_id: int) -> list[str]:
+        """
+        Gets the list of processed payments for a user.
+
+        Args:
+            user_id (int): The user ID.
+
+        Returns:
+            list: The list of processed payments for the user.
+        """
+        with RedisWrapper.get_lock("processed_payments_lock"):
+            processed_payments: dict[int, list[str]] = RedisWrapper.get_secure("processed_payments") or {}
+
+            if user_id not in processed_payments.keys():
+                processed_payments[user_id] = []
+                RedisWrapper.set_secure("processed_payments", processed_payments)
+
+            return processed_payments[user_id]
+
+    @classmethod
+    def set_request_data(cls, *, request_id: str, data: dict) -> None:
+        """
+        Sets the data for a request.
+
+        Args:
+            request_id (str): The ID of the request.
+            data (dict): The data to set.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock("requests_lock"):
+            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+                RedisWrapper.set_secure(request_id, data)
+
+    @classmethod
+    def get_request_data(cls, *, request_id: str) -> Optional[dict]:
+        """
+        Gets the data for a request.
+
+        Args:
+            request_id (str): The ID of the request.
+
+        Returns:
+            Optional[dict]: The data for the request if it exists, None otherwise.
+        """
+        with RedisWrapper.get_lock("requests_lock"):
+            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+                return RedisWrapper.get_secure(request_id)
+
+    @classmethod
+    def remove_request_data(cls, *, request_id: str) -> None:
+        """
+        Removes the data for a request.
+
+        Args:
+            request_id (str): The ID of the request.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock("requests_lock"):
+            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+                RedisWrapper.delete(request_id)
+
+    @classmethod
+    def get_all_request_data(cls) -> dict[str, dict]:
+        """
+        Gets the data for all requests.
+
+        Returns:
+            dict[str, dict]: The data for all requests.
+        """
+        request_log = RedisWrapper.get_request_log()
+        with RedisWrapper.get_lock("requests_lock"):
+            request_data = {request_id: RedisWrapper.get_secure(request_id) for request_id in request_log}
+
+            return request_data
+
+    @classmethod
+    def register_payment(cls, *, user_id: int, payment_id: str) -> None:
+        """
+        Registers a payment as processed for a specific user.
+
+        Args:
+            user_id (int): The ID of the user.
+            payment_id (str): The ID of the payment.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock("processed_payments_lock"):
+            processed_payments: dict[int, list[str]] = RedisWrapper.get_secure("processed_payments") or {}
+
+            if user_id not in processed_payments.keys():
+                processed_payments[user_id] = []
+
+            processed_payments[user_id].append(payment_id)
+            RedisWrapper.set_secure("processed_payments", processed_payments)
+
+    @classmethod
+    def unregister_payment(cls, *, user_id: int, payment_id: str):
+        """
+        Unregisters a payment as processed for a specific user.
+
+        Args:
+            user_id (int): The ID of the user.
+            payment_id (str): The ID of the payment.
+        """
+        with RedisWrapper.get_lock("processed_payments_lock"):
+            processed_payments: dict[int, list[str]] = RedisWrapper.get_secure("processed_payments") or {}
+
+            if user_id not in processed_payments.keys():
+                return
+
+            if payment_id in processed_payments[user_id]:
+                processed_payments[user_id].remove(payment_id)
+                RedisWrapper.set_secure("processed_payments", processed_payments)
 
 
 # Initialize Redis client

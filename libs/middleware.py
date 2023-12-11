@@ -1,7 +1,6 @@
 # middleware.py
 
 # Standard library imports
-import os
 import ipaddress
 from enum import Enum
 import xml.etree.ElementTree as ET
@@ -12,13 +11,11 @@ import json
 import yaml
 
 # Local application/library imports
+from . import logger
 from flask import Flask, Response
 from werkzeug.wrappers import Request
-from libs.logger import setup_logger
 from libs.exceptions import InvalidIPAddressError
 
-# Setup logging
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 # Define a type for the function signature
 RequestLoggerCallbackData = dict[any, any], dict[str, any]
@@ -26,6 +23,8 @@ RequestLoggerCallback = Callable[[RequestLoggerCallbackData], None]
 
 # Define a type for the route_regex
 RequestLoggerRouteRegex = Optional[Union[str, list[str]]]
+# Define a type for the allowed methods
+RequestLoggerMethods = Optional[Union[str, list[str]]]
 
 
 class _ParserReturnType(Enum):
@@ -230,10 +229,11 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
         app (callable): The WSGI application.
         callback (Optional[CallbackFunction], None]]): Optional callback function to handle the request.
         route_regex (Optional[RouteRegex]): Optional regular expression or list of regular expressions representing routes for which to log requests. Default is None (logs all requests).
+        methods (Optional[Methods]): Optional HTTP method or list of HTTP methods for which to log requests. Default is None (logs all requests).
 
     """
 
-    def __init__(self, app, callback: Optional[RequestLoggerCallback] = None, route_regex: Optional[RequestLoggerRouteRegex] = None):
+    def __init__(self, app, callback: Optional[RequestLoggerCallback] = None, route_regex: Optional[RequestLoggerRouteRegex] = None, methods: Optional[RequestLoggerMethods] = None):
         self.app = app
         self.callback = callback
 
@@ -241,6 +241,11 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
             self.route_regex = [route_regex]
         else:
             self.route_regex = route_regex
+
+        if isinstance(methods, str):
+            self.methods = [methods]
+        else:
+            self.methods = methods
 
     def __call__(self, environ: dict, start_response: callable):
         """
@@ -254,8 +259,13 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
             iterable: The response from the WSGI application.
 
         """
-        # Return early if the route is not in the list of routes to log
         path_info = environ.get("PATH_INFO")
+
+        # Return early if the method is not in the list of methods to log
+        if self.methods is not None and environ["REQUEST_METHOD"] not in self.methods:
+            return self.app(environ, start_response)
+
+        # Return early if the route is not in the list of routes to log
         if self.route_regex is not None and not any(match(route, path_info) for route in self.route_regex):
             return self.app(environ, start_response)
 
@@ -267,6 +277,9 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
 
         # Get request query string
         request_query_string = environ["QUERY_STRING"]
+
+        # Get the user agent
+        request_user_agent = environ.get("HTTP_USER_AGENT")
 
         # Get request cookies
         request_cookies = {k: v for k, v in environ.items() if k.startswith("HTTP_COOKIE")}
@@ -286,12 +299,13 @@ class RequestLoggerMiddleware:  # pylint: disable=too-few-public-methods
 
         # Constrcut request_data dictionary
         request_data: RequestLoggerCallbackData = {
-            "method": request_method,
             "url": request_url,
-            "query_string": request_query_string,
+            "method": request_method,
+            "headers": request_headers,
             "cookies": request_cookies,
             "client_ip": request_client_ip,
-            "headers": request_headers,
+            "user_agent": request_user_agent,
+            "query_string": request_query_string,
             "body": _parse_request_body(request_body),
         }
 

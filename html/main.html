@@ -1,0 +1,24 @@
+{% extends 'inc/base.html' %}
+{% block title %}Login{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="/static/css/login.css">
+{% endblock %}
+{% block content %}
+<div class="login-container">
+    <form id="login" class="pure-form pure-form-stacked" action="/login" method="post">
+        <fieldset>
+            <legend>Login</legend>
+    
+            <label for="username">User</label>
+            <input id="username" name="username" type="text" placeholder="username" autocomplete="username" required>
+    
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="password" autocomplete="current-password" required>
+    
+            <button type="submit" class="pure-button login">Login</button>
+            <input type="hidden" name="next" value="{{ next }}">
+        </fieldset>
+    </form>
+</div>
+{% endblock %}

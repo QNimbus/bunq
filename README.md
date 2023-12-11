@@ -54,6 +54,8 @@ To generate the callback model from the schema, run the following command:
 
 ## Miscelaneous
 
+### Log files
+
 To concatenate all the log files into a single log file, run the following command:
 
 ```
@@ -73,4 +75,12 @@ $ grep -h logs/all.log -e "\"category\": \"MUTATION\"" > logs/mutation.log
 $ grep -h logs/all.log -e "\"category\": \"PAYMENT\"" > logs/payment.log
 $ grep -h logs/all.log -e "\"category\": \"REQUEST\"" > logs/request.log
 $ grep -h logs/all.log -e "\"category\": \"CARD_TRANSACTION_SUCCESSFUL\"" -e "<ANOTHER-CATEGORY>" > logs/misc.log
+```
+
+### Generate passwords
+
+To generate a password, run the following command:
+
+```
+$ scripts/users.py my-password
 ```
