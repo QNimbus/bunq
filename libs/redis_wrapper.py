@@ -21,6 +21,8 @@ import redis
 # Local application/library imports
 from libs.exceptions import RedisMemoizeError, RedisMemoizeRuntimeError, SecurityError
 
+# Import logger
+from libs import logger  # pylint: disable=ungrouped-imports,unused-import
 
 # Get HMAC secret key from environment variable
 REDIS_HMAC_SECRET_KEY = os.environ.get("REDIS_HMAC_SECRET_KEY", secrets.token_hex(32)).encode("utf-8")
@@ -55,12 +57,12 @@ class JsonSerializer(ABC):
         """
 
 
-def redis_memoize(expiration_time=600, secure=True, instance_identifier=None, serializer: JsonSerializer = None):
+def redis_memoize(expires=600, secure=True, instance_identifier=None, serializer: JsonSerializer = None):
     """
     Decorator function for caching the result of a function using Redis.
 
     Args:
-        expiration_time (int, optional): Expiration time in seconds for the cached result. Defaults to 60.
+        expires (int, optional): Expiration time in seconds for the cached result. Defaults to 60.
         secure (bool, optional): Flag indicating whether to use secure methods for caching. Defaults to True.
         instance_identifier (str, optional): Name of the method or property used to generate a unique identifier for the cached result. Defaults to None.
             If provided, this method or property will be accessed on the instance of the function's first argument. Defaults to None.
@@ -73,11 +75,50 @@ def redis_memoize(expiration_time=600, secure=True, instance_identifier=None, se
         RedisMemoizeError: Thrown if HMAC secret key is not provided.
 
     Example usage:
-        @redis_memoize(expiration_time=300, identifier_method='get_id')
+        @redis_memoize(expires=300, identifier_method='get_id')
         def get_data(user_id):
             # Function logic here
             return data
     """
+
+    def _generate_key(func, args, kwargs, instance_identifier):
+        if _is_method_with_instance(func, args):
+            instance = args[0]
+            instance_id = _get_instance_id(instance, instance_identifier)
+            key_suffix = f"{instance.__class__.__name__}:{instance_id}"
+            return f"{key_suffix}:{func.__name__}:{pickle.dumps((args[1:], kwargs))}"
+
+        key_suffix = "standalone"
+        return f"{key_suffix}:{func.__name__}:{pickle.dumps((args, kwargs))}"
+
+    def _is_method_with_instance(func, args):
+        return inspect.ismethod(func) or (args and inspect.isclass(args[0].__class__))
+
+    def _get_instance_id(instance, instance_identifier):
+        if instance_identifier and callable(getattr(instance, instance_identifier, None)):
+            return getattr(instance, instance_identifier)()
+        if instance_identifier and hasattr(instance, instance_identifier):
+            return getattr(instance, instance_identifier)
+        return id(instance)
+
+    def _fetch_from_cache(key, secure):
+        if secure:
+            return RedisWrapper.get_secure(key)
+        else:
+            return RedisWrapper.get(key)
+
+    def _deserialize_data(cached_data, serializer):
+        if serializer is not None:
+            return serializer.deserialize(cached_data)
+        return cached_data
+
+    def _cache_result(key, result, serializer, secure, expires):
+        data_to_cache = serializer.serialize(result) if serializer else result
+
+        if secure:
+            RedisWrapper.setex_secure(key=key, value=data_to_cache, expires=expires)
+        else:
+            RedisWrapper.setex(key=key, value=data_to_cache, expires=expires)
 
     def decorator(func):
         # Throw exception if HMAC secret key is not provided
@@ -86,59 +127,22 @@ def redis_memoize(expiration_time=600, secure=True, instance_identifier=None, se
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # Check if the function is a method and has an instance
-            if inspect.ismethod(func) or (len(args) > 0 and inspect.isclass(args[0].__class__)):
-                instance = args[0]
-                try:
-                    # Check if instance identifier is callable and call it if it is
-                    if instance_identifier and callable(getattr(instance, instance_identifier)):
-                        instance_id = getattr(instance, instance_identifier)()
-                    elif instance_identifier and hasattr(instance, instance_identifier):
-                        instance_id = getattr(instance, instance_identifier)
-                    else:
-                        # Fallback to a default identifier (e.g., instance's `id`)
-                        instance_id = id(instance)
-                except Exception as exc:
-                    raise RedisMemoizeRuntimeError(f"Failed to get instance identifier: {exc}") from exc
+            try:
+                key = _generate_key(func, args, kwargs, instance_identifier)
+                cached_data = _fetch_from_cache(key, secure)
 
-                key_suffix = f"{instance.__class__.__name__}:{instance_id}"
-                key = f"{key_suffix}:{func.__name__}:{pickle.dumps((args[1:], kwargs))}"
-            else:
-                # It's a standalone function
-                key_suffix = "standalone"
-                key = f"{key_suffix}:{func.__name__}:{pickle.dumps((args, kwargs))}"
+                if cached_data is not None:
+                    return _deserialize_data(cached_data, serializer)
 
-            if secure:
-                # Try fetching the result from Redis using secure methods
-                cached_data = RedisWrapper.get_secure(key)
-            else:
-                # Try fetching the result from Redis using non-secure methods
-                cached_data = RedisWrapper.get(key)
-
-            if cached_data is not None:
-                # If a serialer is provided, deserialize the cached data
-                if serializer is not None:
-                    cached_data = serializer.deserialize(cached_data)
-
-                return cached_data
-
-            # Call the function and cache the result
-            result = func(*args, **kwargs)
-
-            # If a serialer is provided, serialize the result
-            if serializer is not None:
-                data_to_cache = serializer.serialize(result)
-            else:
-                data_to_cache = result
-
-            if secure:
-                # Cache the result using secure methods
-                RedisWrapper.setex_secure(key=key, value=data_to_cache, expiration_time=expiration_time)
-            else:
-                # Cache the result using non-secure methods
-                RedisWrapper.setex(key=key, value=data_to_cache, expiration_time=expiration_time)
-
-            return result
+                # Call the function and cache the result
+                result = func(*args, **kwargs)
+                _cache_result(key, result, serializer, secure, expires)
+                return result
+            except pickle.PicklingError as error:
+                args_str = ", ".join([str(arg) for arg in args])
+                error_message = f"Error while pickling data: ({args_str})"
+                logger.error(error_message)
+                raise RedisMemoizeRuntimeError(error_message) from error
 
         return wrapper
 
@@ -163,7 +167,7 @@ class RedisWrapper:
             password (str): Redis password.
         """
         if cls._client is None:
-            cls._client = redis.Redis(host=host, port=port, password=password, db=0)
+            cls._client = redis.StrictRedis(host=host, port=port, password=password, db=0)
 
     @classmethod
     def _ensure_initialized(cls):
@@ -280,23 +284,23 @@ class RedisWrapper:
         RedisWrapper.set(key=key, value=pickle.dumps((value, signature)))
 
     @classmethod
-    def setex_secure(cls, key, value, expiration_time):
+    def setex_secure(cls, key: str, value: any, expires: int):
         """
         Set the value associated with the given key in Redis with an expiration time and generate an HMAC signature.
 
         Args:
             key (str): Redis key.
             value (any): Value to be set. It can be of any type.
-            expiration_time (int): Expiration time in seconds.
+            expires (int): Expiration time in seconds.
         """
         # Generate HMAC signature
         signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
 
         # Store the value and signature as a tuple
-        RedisWrapper.setex(key=key, expiration_time=expiration_time, value=pickle.dumps((value, signature)))
+        RedisWrapper.setex(key=key, expires=expires, value=pickle.dumps((value, signature)))
 
     @classmethod
-    def set(cls, key, value):
+    def set(cls, key: str, value: any):
         """
         Set the value associated with the given key in Redis.
 
@@ -308,17 +312,17 @@ class RedisWrapper:
         cls._client.set(name=key, value=pickle.dumps(value))
 
     @classmethod
-    def setex(cls, key, value, expiration_time):
+    def setex(cls, key: str, value: any, expires: int):
         """
         Set the value associated with the given key in Redis with an expiration time.
 
         Args:
             key (str): Redis key.
             value (any): Value to be set. It can be of any type.
-            expiration_time (int): Expiration time in seconds.
+            expires (int): Expiration time in seconds.
         """
         cls._ensure_initialized()
-        cls._client.setex(name=key, time=expiration_time, value=pickle.dumps(value))
+        cls._client.setex(name=key, time=expires, value=pickle.dumps(value))
 
     @classmethod
     def delete(cls, key):
@@ -340,6 +344,39 @@ class RedisWrapper:
         cls._client.flushdb()
 
     # Helper methods
+
+    @classmethod
+    def is_token_revoked(cls, jwt_header: dict, jwt_payload: dict) -> bool:  # pylint: disable=unused-argument
+        """
+        Checks if a JWT token is revoked.
+
+        Args:
+            jwt_payload (dict): The JWT payload.
+
+        Returns:
+            bool: True if the token is revoked, False otherwise.
+        """
+        # Check if the token is in the blacklist
+        return RedisWrapper.get(f"token_revoked::{jwt_payload['jti']}") is not None
+
+    @classmethod
+    def revoke_token(cls, *, jwt_header: Optional[dict] = None, jwt_payload: dict, expires: Optional[int] = None) -> None:  # pylint: disable=unused-argument
+        """
+        Revokes a JWT token.
+
+        Args:
+            jwt_header (dict, optional): The JWT header. Defaults to None.
+            jwt_payload (dict): The JWT payload.
+            expires (int, optional): Expiration time in seconds for the cached result. If not provided, the token will not expire. Defaults to None.
+
+        Returns:
+            None
+        """
+        # Add the token to the blacklist
+        if expires is None:
+            RedisWrapper.set(f"token_revoked::{jwt_payload['jti']}", True)
+        else:
+            RedisWrapper.setex(f"token_revoked::{jwt_payload['jti']}", True, expires=expires)
 
     @classmethod
     def log_request(cls, *, request_id: str) -> None:
@@ -502,10 +539,10 @@ if __name__ == "__main__":
     parser.add_argument("function", choices=["flushdb"], help="Specify the function to run. 'flushdb' for Redis.flushdb().")
 
     # Parse arguments
-    args = parser.parse_args()
+    cl_arguments = parser.parse_args()
 
     # Check which function to call
-    if args.function == "flushdb":
+    if cl_arguments.function == "flushdb":
         RedisWrapper.flushdb()
     else:
         print("Invalid function.")

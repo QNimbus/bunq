@@ -2,8 +2,6 @@ const ajax = (() => {
   let currentPage = 1; // Start from the first page
   const pageSize = 10; // Number of items per page
 
-  /* JWT functions */
-
   const Utils = (() => {
     // Function to refresh the access token
     async function refreshToken() {
@@ -41,9 +39,16 @@ const ajax = (() => {
       if (parts.length === 2) return parts.pop().split(";").shift();
     }
 
+    function isValidBase64(str) {
+      const base64Regex =
+        /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
+      return base64Regex.test(str);
+    }
+
     // Expose the functions you want to make accessible outside the IIFE
     return {
       fetchWithToken: fetchWithToken,
+      isValidBase64: isValidBase64,
       getCookie: getCookie,
     };
   })();
@@ -57,12 +62,15 @@ const ajax = (() => {
         return response.json();
       })
       .then((data) => {
+        console.log(data);
         const tableBody = document.getElementById("request-table-body");
         tableBody.innerHTML = ""; // Clear existing content
 
         if (data && data.data) {
           data.data.forEach(([uuid, request]) => {
-            tableBody.appendChild(createRow(uuid, request));
+            const [mainRow, detailRow] = createRows(uuid, request);
+            tableBody.appendChild(mainRow);
+            tableBody.appendChild(detailRow);
           });
 
           // Update pagination controls
@@ -106,29 +114,38 @@ const ajax = (() => {
     }
   }
 
-  function createRow(uuid, request) {
+  function createRows(uuid, request) {
+    // For each key in request, check if it is base64 encoded, and decode it if so
+    Object.entries(request).forEach(([key, value]) => {
+      if (Utils.isValidBase64(value)) {
+        request[key] = atob(value);
+      }
+    });
+
     // Create a new table row element
-    const row = document.createElement("tr");
-    row.className = "main-row";
+    const mainRow = document.createElement("tr");
+    const detailRow = document.createElement("tr");
+    mainRow.className = "main-row";
+    detailRow.className = "detail-row";
 
     // Add chevron cell to row
     const chevronCell = document.createElement("td");
     chevronCell.className = "text-center";
     chevronCell.innerHTML =
       '<i class="rotating-chevron fa-solid fa-chevron-right"></i>';
-    row.appendChild(chevronCell);
+    mainRow.appendChild(chevronCell);
 
     // Add checkbox cell to row
     const checkboxCell = document.createElement("td");
     checkboxCell.className = "text-center";
     checkboxCell.innerHTML = '<input type="checkbox" />';
-    row.appendChild(checkboxCell);
+    mainRow.appendChild(checkboxCell);
 
     // Add Timestamp cell to row
     const timestampCell = document.createElement("td");
     timestampCell.textContent = request.timestamp;
     timestampCell.title = request.timestamp;
-    row.appendChild(timestampCell);
+    mainRow.appendChild(timestampCell);
 
     // Add Result Cell with conditional content
     const resultCell = document.createElement("td");
@@ -142,25 +159,25 @@ const ajax = (() => {
     } else {
       resultCell.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
     }
-    row.appendChild(resultCell);
+    mainRow.appendChild(resultCell);
 
     // Add Display Name cell to row
     const displayNameCell = document.createElement("td");
     displayNameCell.title = request.display_name;
     displayNameCell.textContent = request.display_name;
-    row.appendChild(displayNameCell);
+    mainRow.appendChild(displayNameCell);
 
     // Add Action cell to row
     const actionCell = document.createElement("td");
     actionCell.title = request.action;
     actionCell.textContent = request.action;
-    row.appendChild(actionCell);
+    mainRow.appendChild(actionCell);
 
     // Add Event cell to row
     const eventCell = document.createElement("td");
     eventCell.title = request.event;
     eventCell.textContent = request.event;
-    row.appendChild(eventCell);
+    mainRow.appendChild(eventCell);
 
     // Add Actions cell to row
     const actionsCell = document.createElement("td");
@@ -174,10 +191,19 @@ const ajax = (() => {
             onclick="event.stopPropagation(); location.href='/replay/${uuid}';"></i>
         <i class="fa-solid fa-trash" title="Delete"></i>                        
     `;
-    row.appendChild(actionsCell);
+    mainRow.appendChild(actionsCell);
 
-    // Return the fully constructed row
-    return row;
+    // Count the number of columns in mainRow
+    const colCount = mainRow.children.length;
+
+    // Add single cell to detail row
+    const detailCell = document.createElement("td");
+    detailCell.colSpan = colCount;
+    detailCell.innerHTML = `<p>Client ip: ${request.client_ip}</p><p>Cookies: ${request.cookies}</p><p>Query string: ${request.query_string}</p>`;
+    detailRow.appendChild(detailCell);
+
+    // Return mainRow and detailRow as a tuple
+    return [mainRow, detailRow];
   }
 
   document.addEventListener("DOMContentLoaded", () => {

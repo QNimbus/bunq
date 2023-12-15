@@ -1,6 +1,6 @@
 #!/usr/bin/env -S python -W ignore
 
-# users.py
+# hash_password.py
 
 # Standard library imports
 import argparse

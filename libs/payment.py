@@ -5,8 +5,8 @@ from threading import Lock
 
 # Third-party imports
 from typing import Optional
-from flask import current_app
 from pydantic import TypeAdapter
+from flask import current_app
 from flask.ctx import AppContext
 
 # Local application/library imports
@@ -16,6 +16,8 @@ from libs.redis_wrapper import RedisWrapper
 from libs.actions import action_request_from_expense, action_transfer_remaining_balance, action_transfer_incoming_payment
 from schema.callback_model import CallbackModel, EventType, PaymentType
 from schema.rules_model import RuleModel, TransferRemainingBalanceActionData, TransferIncomingPaymentActionData, RequestFromExpenseActionData, ActionType
+
+# Import logging
 from . import logger
 
 

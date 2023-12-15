@@ -1,7 +1,6 @@
 # json_user.py
 
 # Standard library imports
-import os
 import json
 from pathlib import Path
 from typing import Optional
@@ -10,9 +9,11 @@ from typing import Optional
 # ...
 
 # Local application/library imports
-from .. import logger
-from libs.crypto import verify_password
 from libs.user import User, UserConnector
+from libs.crypto import verify_password
+
+# Import logging
+from libs import logger  # pylint: disable=ungrouped-imports,unused-import
 
 
 class JsonUserConnector(UserConnector):

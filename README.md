@@ -82,5 +82,13 @@ $ grep -h logs/all.log -e "\"category\": \"CARD_TRANSACTION_SUCCESSFUL\"" -e "<A
 To generate a password, run the following command:
 
 ```
-$ scripts/users.py my-password
+$ scripts/hash_password.py my-password
+```
+
+### Generate random keys for the config file
+
+To generate a random key, run the following command:
+
+```
+$ python -c 'import os; print(os.urandom(32))' b'_5#y2L"F4Q8z\n\xec]/'
 ```

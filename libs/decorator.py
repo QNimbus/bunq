@@ -3,6 +3,9 @@
 # Standard library imports
 from typing import Callable
 
+# Third party imports
+# ...
+
 # Local application/library imports
 
 

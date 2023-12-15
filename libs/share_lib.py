@@ -9,10 +9,10 @@ from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.model.generated.endpoint import UserPerson, UserCompany, UserLight, MonetaryAccountBank
 
 # Local application/library imports
+# ...
+
+# Import logging
 from . import logger
-
-
-logger = setup_logger(__name__, os.environ.get("LOG_LEVEL", "INFO"))
 
 
 class ShareLib:

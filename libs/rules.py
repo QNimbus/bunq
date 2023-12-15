@@ -3,6 +3,7 @@
 # Standard library imports
 import re
 import json
+from pathlib import Path
 from typing import Union
 
 # Third-party imports
@@ -11,7 +12,6 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
 # Local application/library imports
-from . import logger
 from libs.exceptions import RuleProcessingError
 from schema.rules_model import Action, PropertyRuleType, BalanceRuleType, RuleCondition, RuleModel, RuleGroup, RuleThatActsOnAProperty, RuleThatActsOnBalance
 from schema.callback_model import (
@@ -22,9 +22,12 @@ from schema.callback_model import (
     MasterCardActionType,
 )
 
+# Import logging
+from . import logger
+
 
 # Load rules from JSON file and validate against schema
-def load_rules(schema: any, rules_path: str) -> list[RuleGroup]:
+def load_rules_from_file(schema: any, rules_file_path: Path) -> list[RuleGroup]:
     """
     Loads the rules from the given JSON file and validates against the schema.
 
@@ -39,7 +42,7 @@ def load_rules(schema: any, rules_path: str) -> list[RuleGroup]:
         RuleProcessingError: If an error occurs in loading or validating the rules.
     """
     try:
-        with open(rules_path, encoding="utf-8") as rules_file:
+        with open(rules_file_path, encoding="utf-8") as rules_file:
             rules = json.load(rules_file)
 
         validate(instance=rules, schema=schema)

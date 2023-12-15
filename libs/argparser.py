@@ -9,8 +9,10 @@ import datetime
 # ...
 
 # Local application/library imports
-from . import logger
 from libs.app_actions import Action
+
+# Import logging
+from libs import logger  # pylint: disable=ungrouped-imports,unused-import
 
 DEFAULT_BUNQ_CONFIGURATION_FILE_NAME = ".bunq.conf"
 

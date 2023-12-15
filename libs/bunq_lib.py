@@ -27,7 +27,7 @@ from bunq.sdk.model.generated.endpoint import (
 )
 
 # Local application/library imports
-from . import logger
+from libs.utils import safe_int
 from libs.redis_wrapper import redis_memoize, JsonSerializer
 from libs.exceptions import (
     BunqLibError,
@@ -37,8 +37,11 @@ from libs.exceptions import (
     StatementsRetrievalError,
 )
 
+# Import logger
+from libs import logger  # pylint: disable=ungrouped-imports,unused-import
+
 # Constants
-REDIS_MEMOIZE_EXPIRATION_TIME = 60 * 60 * 24  # 24 hours
+MEMOIZE_EXPIRATION_TIME = safe_int(os.environ.get("MEMOIZE_EXPIRATION_TIME"), 60 * 60 * 24)  # 24 hours
 
 
 class MonetaryAccountSerializer(JsonSerializer):
@@ -114,6 +117,54 @@ class MonetaryAccountSerializer(JsonSerializer):
         return deserialized_objects
 
 
+class StatementFormat(Enum):  # pylint: disable=too-few-public-methods
+    """
+    Enum to represent different formats of the statement.
+
+    Attributes:
+        CSV: A statement in CSV format.
+        MT940: A statement in MT940 format.
+        PDF: A statement in PDF format.
+    """
+
+    CSV = "CSV"
+    MT940 = "MT940"
+    PDF = "PDF"
+
+
+class RegionalFormat(Enum):  # pylint: disable=too-few-public-methods
+    """
+    Enum to represent different regional formats of the statement.
+
+    Attributes:
+        EUROPEAN: A statement in European format.
+        UK_US: A statement in UK/US format.
+    """
+
+    EUROPEAN = "EUROPEAN"
+    UK_US = "UK_US"
+
+
+@dataclass
+class StatementOptions:
+    """
+    Represents the options for generating a statement.
+
+    Attributes:
+        monetary_account_id (int): The ID of the monetary account.
+        date_start (str): The start date of the statement.
+        date_end (str): The end date of the statement.
+        statement_format (StatementFormat, optional): The format of the statement. Defaults to CSV.
+        regional_format (RegionalFormat, optional): The regional format of the statement. Defaults to EUROPEAN.
+    """
+
+    monetary_account_id: int
+    date_start: str
+    date_end: str
+    statement_format: StatementFormat = StatementFormat.CSV
+    regional_format: RegionalFormat = RegionalFormat.EUROPEAN
+
+
 @dataclass
 class CounterParty:
     """
@@ -163,34 +214,6 @@ class PaymentOptions:
 
     description: str
     currency: str = "EUR"
-
-
-class StatementFormat(Enum):  # pylint: disable=too-few-public-methods
-    """
-    Enum to represent different formats of the statement.
-
-    Attributes:
-        CSV: A statement in CSV format.
-        MT940: A statement in MT940 format.
-        PDF: A statement in PDF format.
-    """
-
-    CSV = "CSV"
-    MT940 = "MT940"
-    PDF = "PDF"
-
-
-class RegionalFormat(Enum):  # pylint: disable=too-few-public-methods
-    """
-    Enum to represent different regional formats of the statement.
-
-    Attributes:
-        EUROPEAN: A statement in European format.
-        UK_US: A statement in UK/US format.
-    """
-
-    EUROPEAN = "EUROPEAN"
-    UK_US = "UK_US"
 
 
 class BunqLib:
@@ -300,7 +323,7 @@ class BunqLib:
 
         return self._BUNQ_CONF_SANDBOX
 
-    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    @redis_memoize(expires=MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
     def get_all_accounts_bank(self, only_active: bool = False) -> list[MonetaryAccountBank]:
         """
         Returns a list of all accounts for the current user.
@@ -323,7 +346,7 @@ class BunqLib:
 
         return accounts
 
-    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    @redis_memoize(expires=MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
     def get_all_accounts_joint(self, only_active: bool = False) -> list[MonetaryAccountJoint]:
         """
         Returns a list of all accounts for the current user.
@@ -346,7 +369,7 @@ class BunqLib:
 
         return accounts
 
-    @redis_memoize(expiration_time=REDIS_MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
+    @redis_memoize(expires=MEMOIZE_EXPIRATION_TIME, instance_identifier="user_id", serializer=MonetaryAccountSerializer)
     def get_all_accounts_savings(self, only_active: bool = False) -> list[MonetaryAccountSavings]:
         """
         Returns a list of all accounts for the current user.
@@ -381,23 +404,12 @@ class BunqLib:
 
         return accounts
 
-    def create_statement(
-        self,
-        monetary_account_id: int,
-        date_start: str,
-        date_end: str,
-        statement_format: StatementFormat = StatementFormat.CSV,
-        regional_format: RegionalFormat = RegionalFormat.EUROPEAN,
-    ) -> int:
+    def create_statement(self, params: StatementOptions) -> int:
         """
         Creates a statement based on the provided parameters.
 
         Parameters:
-            monetary_account_id (int): The ID of the monetary account.
-            date_start (str): The start date for the statement.
-            date_end (str): The end date for the statement.
-            statement_format (StatementFormat): The format of the statement. Defaults to CSV.
-            regional_format (RegionalFormat): The regional format of the statement. Defaults to EUROPEAN.
+            params (StatementOptions): Object containing all parameters for the statement.
 
         Returns:
             int: The value returned after creating the statement.
@@ -406,11 +418,11 @@ class BunqLib:
 
         # Create a statement
         return ExportStatement.create(
-            monetary_account_id=monetary_account_id,
-            date_start=date_start,
-            date_end=date_end,
-            statement_format=statement_format.value,
-            regional_format=regional_format.value,
+            monetary_account_id=params.monetary_account_id,
+            date_start=params.date_start,
+            date_end=params.date_end,
+            statement_format=params.statement_format.value,
+            regional_format=params.regional_format.value,
         ).value
 
     def make_payment(
@@ -420,6 +432,21 @@ class BunqLib:
         counterparty: CounterParty,
         options: PaymentOptions = None,
     ) -> int:
+        """
+        Makes a payment using the specified amount, monetary account ID, counterparty, and payment options.
+
+        Args:
+            amount (float): The amount of the payment.
+            monetary_account_id (int): The ID of the monetary account.
+            counterparty (CounterParty): The counterparty of the payment.
+            options (PaymentOptions, optional): The payment options. Defaults to None.
+
+        Returns:
+            int: The value of the payment.
+
+        Raises:
+            ValueError: If the amount is not positive or exceeds the maximum payment amount.
+        """
         # Check if amount is positive and less than the maximum payment amount
         if amount <= 0 or amount > self.max_payment_amount:
             raise ValueError(f"Amount must be positive and less than {self.max_payment_amount}")
@@ -444,7 +471,16 @@ class BunqLib:
         options: RequestInquiryOptions = None,
     ) -> int:
         """
-        Creates a request inquiry based on the provided parameters.
+        Makes a request for a specified amount from a specified counterparty.
+
+        Args:
+            amount (float): The amount to be requested.
+            monetary_account_id (int): The ID of the monetary account from which the request will be made.
+            counterparty (CounterParty): The counterparty from whom the request will be made.
+            options (RequestInquiryOptions, optional): Additional options for the request. Defaults to None.
+
+        Returns:
+            int: The value of the created request inquiry.
         """
         self.setup_context()
 

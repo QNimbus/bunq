@@ -4,30 +4,13 @@ const main = (() => {
   document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("detailModal");
     const modalText = document.getElementById("modal-text");
-    const loginForm = document.getElementById("login");
-    const tableRows = document.querySelectorAll("tr.main-row, tr.detail-row");
+    const loginForm = document.getElementById("login-form");
+    const lougoutButton = document.getElementById("logout-button");
     const rootStyle = getComputedStyle(document.documentElement);
     const transitionDuration = rootStyle.getPropertyValue(
       "--modal-transition-duration"
     );
     const durationInMs = parseFloat(transitionDuration) * 1000; // Convert the duration from seconds to milliseconds for setTimeout
-
-    /* Utility functions */
-
-    function isValidBase64(str) {
-      const base64Regex =
-        /^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/;
-      return base64Regex.test(str);
-    }
-
-    function decodeBase64() {
-      document.querySelectorAll("span.encodedData").forEach((elem) => {
-        if (elem.children.length === 0 && isValidBase64(elem.textContent)) {
-          elem.textContent = atob(elem.textContent).slice(0, 100);
-          elem.classList.add("ellipsis");
-        }
-      });
-    }
 
     /* DOM functions */
 
@@ -133,10 +116,8 @@ const main = (() => {
 
     /* Event listeners */
 
-    // Global 'click' event listener
     document.addEventListener("click", (event) => {
       const clickedElement = event.target;
-      const mainRow = clickedElement.closest(".main-row");
 
       if (clickedElement.hasAttribute("data-modal-title")) {
         showModal(event);
@@ -145,63 +126,70 @@ const main = (() => {
         clickedElement === modal
       ) {
         closeModal();
-      } else if (
+      } else {
+        handleTableRowClick(clickedElement);
+      }
+    });
+
+    document.addEventListener("mouseover", (event) => {
+      toggleRowHighlight(event.target, true);
+    });
+
+    document.addEventListener("mouseout", (event) => {
+      toggleRowHighlight(event.target, false);
+    });
+
+    function handleTableRowClick(clickedElement) {
+      const mainRow = clickedElement.closest(".main-row");
+      if (
         mainRow &&
         mainRow.tagName === "TR" &&
-        clickedElement.tagName !== "INPUT" &&
-        clickedElement.tagName !== "BUTTON"
+        !["INPUT", "BUTTON"].includes(clickedElement.tagName)
       ) {
         toggleDetailRow(mainRow);
       }
-    });
+    }
+
+    function toggleRowHighlight(targetElement, highlight) {
+      const row = targetElement.closest("tr");
+      if (!row) return;
+
+      const previousSibling = row.previousElementSibling;
+      const nextSibling = row.nextElementSibling;
+
+      if (
+        (row.classList.contains("main-row") &&
+          nextSibling?.classList.contains("detail-row")) ||
+        (row.classList.contains("detail-row") &&
+          previousSibling?.classList.contains("main-row"))
+      ) {
+        row.classList.toggle("highlight", highlight);
+        (row.classList.contains("main-row")
+          ? nextSibling
+          : previousSibling
+        ).classList.toggle("highlight", highlight);
+      }
+    }
 
     if (loginForm) {
       loginForm.addEventListener("submit", submitLoginForm);
     }
 
-    if (tableRows) {
-      tableRows.forEach((row) => {
-        row.addEventListener("mouseover", function () {
-          const previousSibling = row.previousElementSibling;
-          const nextSibling = row.nextElementSibling;
-
-          if (
-            row.classList.contains("main-row") &&
-            nextSibling?.classList.contains("detail-row")
-          ) {
-            row.classList.add("highlight");
-            nextSibling.classList.add("highlight");
-          } else if (
-            row.classList.contains("detail-row") &&
-            previousSibling?.classList.contains("main-row")
-          ) {
-            row.classList.add("highlight");
-            previousSibling.classList.add("highlight");
-          }
-        });
-
-        row.addEventListener("mouseout", function () {
-          const previousSibling = row.previousElementSibling;
-          const nextSibling = row.nextElementSibling;
-
-          if (
-            row.classList.contains("main-row") &&
-            nextSibling?.classList.contains("detail-row")
-          ) {
-            row.classList.remove("highlight");
-            nextSibling.classList.remove("highlight");
-          } else if (
-            row.classList.contains("detail-row") &&
-            previousSibling?.classList.contains("main-row")
-          ) {
-            row.classList.remove("highlight");
-            previousSibling.classList.remove("highlight");
-          }
-        });
+    if (lougoutButton) {
+      lougoutButton.addEventListener("click", () => {
+        fetch("/logout", { method: "DELETE" })
+          .then((response) => {
+            if (response.redirected) {
+              window.location.href = response.url;
+            } else if (!response.ok) {
+              // Handle the response here (e.g., redirecting the user or displaying a message)
+            }
+          })
+          .catch((error) => {
+            console.error("Error during logout:", error);
+            // Handle the error (e.g., displaying an error message to the user)
+          });
       });
     }
-
-    // Decode base64 data on page load
-    decodeBase64();
   });
 })();

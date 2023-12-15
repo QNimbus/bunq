@@ -1,21 +1,27 @@
 # middleware.py
 
 # Standard library imports
-import ipaddress
 from enum import Enum
-import xml.etree.ElementTree as ET
-from re import match
+from threading import Thread
 from io import BytesIO
+from re import match
 from typing import Callable, Optional, Union
-import json
+from datetime import datetime
+import ipaddress
+import xml.etree.ElementTree as ET
 import yaml
+import json
 
-# Local application/library imports
-from . import logger
+# Third party imports
 from flask import Flask, Response
 from werkzeug.wrappers import Request
+
+# Local application/library imports
+from libs.redis_wrapper import RedisWrapper
 from libs.exceptions import InvalidIPAddressError
 
+# Import logger
+from . import logger
 
 # Define a type for the function signature
 RequestLoggerCallbackData = dict[any, any], dict[str, any]
@@ -355,3 +361,27 @@ class DebugLogMiddleware:  # pylint: disable=too-few-public-methods
         environ["wsgi.input"] = BytesIO(request_body)
 
         return self.app(environ, start_response)
+
+
+def callback_logger(environ: dict, request_data: RequestLoggerCallbackData):
+    """
+    Callback function for the RequestLoggerMiddleware.
+
+    Args:
+        request_data (RequestLoggerCallbackData): The request dict.
+
+    Returns:
+        None
+    """
+    # Generate a unique id for the request and store in Flask Request object
+    request_id = RedisWrapper.generate_uuid()
+    request_data["id"] = request_id
+    request_data["processed"] = False
+    request_data["timestamp"] = datetime.utcnow()
+
+    environ["request_id"] = request_id
+
+    RedisWrapper.set_request_data(request_id=request_id, data=request_data)
+
+    # Register the request in a separate thread
+    Thread(target=RedisWrapper.log_request, kwargs={"request_id": request_id}).start()
