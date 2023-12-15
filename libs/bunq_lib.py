@@ -28,7 +28,7 @@ from bunq.sdk.model.generated.endpoint import (
 
 # Local application/library imports
 from libs.utils import safe_int
-from libs.redis_wrapper import redis_memoize, JsonSerializer
+from libs.redis_memoizer import redis_memoize, JsonSerializer
 from libs.exceptions import (
     BunqLibError,
     ExportError,

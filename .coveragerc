@@ -1,0 +1,40 @@
+[run]
+# Include only specific directories in coverage analysis
+source =
+    libs/
+    server.py
+
+# Omit certain files or patterns from coverage analysis
+omit =
+    */tests/*
+    */migrations/*
+
+# Enable branch coverage measurement
+branch = True
+
+[report]
+# Specify the minimum coverage percentage required
+fail_under = 80
+
+# Exclude lines that are not relevant to coverage
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't include lines that are just defensive programming
+    if self.debug:
+    if settings.DEBUG:
+
+    # Don't include lines that are not reachable
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't include lines used for type checking
+    if TYPE_CHECKING:
+
+# Show missing lines in report output
+show_missing = True
+
+[html]
+# Directory where HTML reports will be placed
+directory = static/htmlcov

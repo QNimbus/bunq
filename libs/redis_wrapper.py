@@ -9,144 +9,22 @@ import uuid
 import pickle
 import secrets
 import hashlib
-import inspect
-import functools
 from typing import Optional
-from abc import ABC, abstractmethod
 
 
 # Third-party imports
 import redis
 
 # Local application/library imports
-from libs.exceptions import RedisMemoizeError, RedisMemoizeRuntimeError, SecurityError
 
 # Import logger
 from libs import logger  # pylint: disable=ungrouped-imports,unused-import
-
-# Get HMAC secret key from environment variable
-REDIS_HMAC_SECRET_KEY = os.environ.get("REDIS_HMAC_SECRET_KEY", secrets.token_hex(32)).encode("utf-8")
+from libs.exceptions import SecurityError
 
 # Get Redis connection details from environment variables
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", None)
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
-
-
-class JsonSerializer(ABC):
-    """
-    A base class for serializing and deserializing objects into JSON strings.
-    """
-
-    @classmethod
-    @abstractmethod
-    def serialize(cls, obj):
-        """
-        Serializes an object into a JSON string.
-        :param obj: The object to serialize.
-        :return: A JSON string representation of the object.
-        """
-
-    @classmethod
-    @abstractmethod
-    def deserialize(cls, json_string):
-        """
-        Deserializes a JSON string back into an object.
-        :param json_string: The JSON string to deserialize.
-        :return: The deserialized object.
-        """
-
-
-def redis_memoize(expires=600, secure=True, instance_identifier=None, serializer: JsonSerializer = None):
-    """
-    Decorator function for caching the result of a function using Redis.
-
-    Args:
-        expires (int, optional): Expiration time in seconds for the cached result. Defaults to 60.
-        secure (bool, optional): Flag indicating whether to use secure methods for caching. Defaults to True.
-        instance_identifier (str, optional): Name of the method or property used to generate a unique identifier for the cached result. Defaults to None.
-            If provided, this method or property will be accessed on the instance of the function's first argument. Defaults to None.
-        serializer (JsonSerializer, optional): Serializer object used to serialize and deserialize the cached data. Defaults to None.
-
-    Returns:
-        function: Decorated function that caches its result using Redis.
-
-    Raises:
-        RedisMemoizeError: Thrown if HMAC secret key is not provided.
-
-    Example usage:
-        @redis_memoize(expires=300, identifier_method='get_id')
-        def get_data(user_id):
-            # Function logic here
-            return data
-    """
-
-    def _generate_key(func, args, kwargs, instance_identifier):
-        if _is_method_with_instance(func, args):
-            instance = args[0]
-            instance_id = _get_instance_id(instance, instance_identifier)
-            key_suffix = f"{instance.__class__.__name__}:{instance_id}"
-            return f"{key_suffix}:{func.__name__}:{pickle.dumps((args[1:], kwargs))}"
-
-        key_suffix = "standalone"
-        return f"{key_suffix}:{func.__name__}:{pickle.dumps((args, kwargs))}"
-
-    def _is_method_with_instance(func, args):
-        return inspect.ismethod(func) or (args and inspect.isclass(args[0].__class__))
-
-    def _get_instance_id(instance, instance_identifier):
-        if instance_identifier and callable(getattr(instance, instance_identifier, None)):
-            return getattr(instance, instance_identifier)()
-        if instance_identifier and hasattr(instance, instance_identifier):
-            return getattr(instance, instance_identifier)
-        return id(instance)
-
-    def _fetch_from_cache(key, secure):
-        if secure:
-            return RedisWrapper.get_secure(key)
-        else:
-            return RedisWrapper.get(key)
-
-    def _deserialize_data(cached_data, serializer):
-        if serializer is not None:
-            return serializer.deserialize(cached_data)
-        return cached_data
-
-    def _cache_result(key, result, serializer, secure, expires):
-        data_to_cache = serializer.serialize(result) if serializer else result
-
-        if secure:
-            RedisWrapper.setex_secure(key=key, value=data_to_cache, expires=expires)
-        else:
-            RedisWrapper.setex(key=key, value=data_to_cache, expires=expires)
-
-    def decorator(func):
-        # Throw exception if HMAC secret key is not provided
-        if secure and not REDIS_HMAC_SECRET_KEY:
-            raise RedisMemoizeError("HMAC secret key not provided")
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                key = _generate_key(func, args, kwargs, instance_identifier)
-                cached_data = _fetch_from_cache(key, secure)
-
-                if cached_data is not None:
-                    return _deserialize_data(cached_data, serializer)
-
-                # Call the function and cache the result
-                result = func(*args, **kwargs)
-                _cache_result(key, result, serializer, secure, expires)
-                return result
-            except pickle.PicklingError as error:
-                args_str = ", ".join([str(arg) for arg in args])
-                error_message = f"Error while pickling data: ({args_str})"
-                logger.error(error_message)
-                raise RedisMemoizeRuntimeError(error_message) from error
-
-        return wrapper
-
-    return decorator
 
 
 class RedisWrapper:
@@ -155,6 +33,9 @@ class RedisWrapper:
     """
 
     _client = None
+
+    # Set class property secrey_key to be used for HMAC
+    REDIS_HMAC_SECRET_KEY = os.environ.get("REDIS_HMAC_SECRET_KEY", secrets.token_hex(32)).encode("utf-8")
 
     @classmethod
     def initialize(cls, host, port, password):
@@ -261,7 +142,7 @@ class RedisWrapper:
         result, stored_signature = pickle.loads(value)
 
         # Recompute the signature and compare
-        computed_signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(result), hashlib.sha256).hexdigest()
+        computed_signature = hmac.new(RedisWrapper.REDIS_HMAC_SECRET_KEY, pickle.dumps(result), hashlib.sha256).hexdigest()
         if hmac.compare_digest(computed_signature, stored_signature):
             return result
 
@@ -278,7 +159,7 @@ class RedisWrapper:
             value (any): Value to be set. It can be of any type.
         """
         # Generate HMAC signature
-        signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
+        signature = hmac.new(RedisWrapper.REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
 
         # Store the value and signature as a tuple
         RedisWrapper.set(key=key, value=pickle.dumps((value, signature)))
@@ -294,7 +175,7 @@ class RedisWrapper:
             expires (int): Expiration time in seconds.
         """
         # Generate HMAC signature
-        signature = hmac.new(REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
+        signature = hmac.new(RedisWrapper.REDIS_HMAC_SECRET_KEY, pickle.dumps(value), hashlib.sha256).hexdigest()
 
         # Store the value and signature as a tuple
         RedisWrapper.setex(key=key, expires=expires, value=pickle.dumps((value, signature)))

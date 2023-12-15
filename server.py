@@ -78,7 +78,7 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     Returns:
         None
     """
-    logger.info("Starting server")
+    logger.info(f"Starting server (module: {__name__}))")
 
     # Create and configure the Flask application
     app = Flask(__name__, template_folder="html")

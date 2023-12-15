@@ -52,6 +52,24 @@ To generate the callback model from the schema, run the following command:
 
 `datamodel-codegen --input-file-type jsonschema --input schema/callback.schema.json --output-model-type pydantic_v2.BaseModel --output schema/callback_model.py --class-name CallbackModel --use-title-as-name --disable-appending-item-suffix`
 
+### Testing
+
+To run the tests, run the following command:
+
+`$ pytest`
+
+To check code coverage of the unit tests, run the following command:
+
+`$ coverage run -m pytest`
+
+To generate a code coverage report, run the following command:
+
+`$ coverage report`
+
+or to generate a HTML report, run the following command:
+
+`$ coverage html`
+
 ## Miscelaneous
 
 ### Log files

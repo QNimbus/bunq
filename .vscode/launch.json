@@ -1,156 +1,176 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "inputs": [
-        {
-            "id": "apiKey",
-            "type": "promptString",
-            "password": true,
-            "description": "Bunq API Key"
-        },
-        {
-            "id": "startDate",
-            "type": "promptString",
-            "default": "1970-01-01",
-            "description": "Start date of statement export"
-        },
-        {
-            "id": "endDate",
-            "type": "promptString",
-            "default": "2099-12-31",
-            "description": "End date of statement export"
-        },
-        {
-            "id": "configurationFile",
-            "type": "promptString",
-            "description": "Bunq configuration file to use"
-        },
-        {
-            "id": "sourceIBAN",
-            "type": "promptString",
-            "description": "Source IBAN"
-        },
-        {
-            "id": "destinationIBAN",
-            "type": "promptString",
-            "description": "Destination IBAN"
-        },
-        {
-            "id": "destinationName",
-            "type": "promptString",
-            "description": "Destination name"
-        },
-    ],
-    "configurations": [
-        {
-            "name": "Bunq: Debug app.py (create-config)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/app.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.env",
-            "args": [
-                "--production",
-                "create-config"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "Bunq: Debug app.py (create-payment)",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/app.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.env",
-            "args": [
-                "--production",
-                "--config-file",
-                "${input:configurationFile}",
-                "create-payment",
-                "--amount",
-                "0.01",
-                "--description",
-                "Test payment",
-                "--source-iban",
-                "${input:sourceIBAN}",
-                "--destination-name",
-                "${input:destinationName}",
-                "--destination-iban",
-                "${input:destinationIBAN}"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "Bunq: Create production configuration",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/app.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "--production",
-                "--config-file",
-                "${input:configurationFile}",
-                "create-config",
-                "--api-key",
-                "${input:apiKey}"
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "Bunq: Export all statements",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/app.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "--production",
-                "--config-file",
-                "${input:configurationFile}",
-                "export",
-                "--start-date",
-                "${input:startDate}",
-                "--end-date",
-                "${input:endDate}",
-            ],
-            "justMyCode": true
-        },
-        {
-            "name": "Python: Gunicorn (uWSGI)",
-            "type": "python",
-            "request": "launch",
-            "module": "gunicorn",
-            "envFile": "${workspaceFolder}/.env-dev",
-            "args": [
-                "--workers=1",
-                "--timeout=0", // This disables the timeout, useful for debugging
-                "--bind=127.0.0.1:5000",
-                "server:create_server()"
-            ],
-            "preLaunchTask": "Chisel client",
-            "postDebugTask": "Terminate Chisel client",
-            "jinja": true,
-            "justMyCode": false,
-        },
-        {
-            "name": "Bunq: Delete all statements",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/app.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "--production",
-                "--config-file",
-                "${input:configurationFile}",
-                "remove-all-statements"
-            ],
-            "justMyCode": false
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "sourceFile",
+      "type": "promptString",
+      "description": "Source file to debug"
+    },
+    {
+      "id": "apiKey",
+      "type": "promptString",
+      "password": true,
+      "description": "Bunq API Key"
+    },
+    {
+      "id": "startDate",
+      "type": "promptString",
+      "default": "1970-01-01",
+      "description": "Start date of statement export"
+    },
+    {
+      "id": "endDate",
+      "type": "promptString",
+      "default": "2099-12-31",
+      "description": "End date of statement export"
+    },
+    {
+      "id": "configurationFile",
+      "type": "promptString",
+      "description": "Bunq configuration file to use"
+    },
+    {
+      "id": "sourceIBAN",
+      "type": "promptString",
+      "description": "Source IBAN"
+    },
+    {
+      "id": "destinationIBAN",
+      "type": "promptString",
+      "description": "Destination IBAN"
+    },
+    {
+      "id": "destinationName",
+      "type": "promptString",
+      "description": "Destination name"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Export code outline to markdown",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/code_outliner_exporter.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": ["--escape-docstrings", "${input:sourceFile}"],
+      "justMyCode": true
+    },
+    {
+      "name": "Bunq: Debug app.py (create-config)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "args": ["--production", "create-config"],
+      "justMyCode": true
+    },
+    {
+      "name": "Bunq: Debug app.py (create-payment)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "args": [
+        "--production",
+        "--config-file",
+        "${input:configurationFile}",
+        "create-payment",
+        "--amount",
+        "0.01",
+        "--description",
+        "Test payment",
+        "--source-iban",
+        "${input:sourceIBAN}",
+        "--destination-name",
+        "${input:destinationName}",
+        "--destination-iban",
+        "${input:destinationIBAN}"
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "Bunq: Create production configuration",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--production",
+        "--config-file",
+        "${input:configurationFile}",
+        "create-config",
+        "--api-key",
+        "${input:apiKey}"
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "Bunq: Export all statements",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--production",
+        "--config-file",
+        "${input:configurationFile}",
+        "export",
+        "--start-date",
+        "${input:startDate}",
+        "--end-date",
+        "${input:endDate}"
+      ],
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Gunicorn (uWSGI)",
+      "type": "python",
+      "request": "launch",
+      "module": "gunicorn",
+      "envFile": "${workspaceFolder}/.env-dev",
+      "args": [
+        "--workers=1",
+        "--timeout=0", // This disables the timeout, useful for debugging
+        "--bind=127.0.0.1:5000",
+        "server:create_server()"
+      ],
+      "preLaunchTask": "Chisel client",
+      "postDebugTask": "Terminate Chisel client",
+      "jinja": true,
+      "justMyCode": false
+    },
+    {
+      "name": "Bunq: Delete all statements",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/app.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--production",
+        "--config-file",
+        "${input:configurationFile}",
+        "remove-all-statements"
+      ],
+      "justMyCode": false
+    }
+  ]
 }
