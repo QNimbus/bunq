@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        :root {
+            /* CSS HSL */
+            --night: #161316ff;
+            --cerulean: hsla(197, 39%, 43%, 1);
+            --bone: hsla(53, 21%, 83%, 1);
+            --old-lace: hsla(47, 47%, 93%, 1);
+            --space-cadet: hsla(231, 24%, 22%, 1);
+            --space-cadet-50: hsla(231, 24%, 22%, 0.5);
+
+            --warning: rgb(122, 16, 16);
+            --warning-a50: rgba(122, 16, 16, 0.5);
+            --warning-a25: rgba(122, 16, 16, 0.25);
+            --warning-50: rgb(189, 136, 136);
+            --warning-20: rgb(228, 207, 207);
+
+            --modal-transition-duration: 0.3s;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-size: 0.8rem;
+            font-family: Roboto, sans-serif;
+
+            line-height: 1.4;
+            color: var(--space-cadet);
+            background: var(--old-lace);
+        }
+
+        /* Flexbox */
+
+        div#content {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            justify-content: flex-start;
+            align-items: stretch;
+            align-content: stretch;
+
+            min-height: 100vh;
+        }
+
+        .flex-items:nth-child(1) {
+            display: block;
+            flex-grow: 0;
+            flex-shrink: 1;
+            flex-basis: auto;
+            align-self: auto;
+            order: 0;
+            background-color: burlywood;
+        }
+
+        .flex-items:nth-child(2) {
+            display: block;
+            flex-grow: 0;
+            flex-shrink: 1;
+            flex-basis: auto;
+            align-self: auto;
+            order: 0;
+        }
+
+        .flex-items:nth-child(3) {
+            display: block;
+            flex-grow: 1;
+            flex-shrink: 1;
+            flex-basis: auto;
+            align-self: auto;
+            order: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="content">
+        <div id="header">top</div>
+        <div id="main">body</div>
+        <div id="footer">footer</div>
+    </div>
+</body>
+
+</html>

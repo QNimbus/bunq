@@ -118,7 +118,9 @@ def refresh_expiring_jwts(response: Response) -> Response:
         target_timestamp = datetime.timestamp(now + current_app.config["JWT_ACCESS_TOKEN_EXPIRES"] * 0.3)
         if target_timestamp > exp_timestamp:
             access_token = create_access_token(identity=get_jwt_identity())
-            set_access_cookies(response, access_token)
+            # Set the JWT cookies
+            access_token_cookie_max_age = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].total_seconds() - 1
+            set_access_cookies(response, access_token, max_age=access_token_cookie_max_age)
         return response
     except (RuntimeError, KeyError):
         # Case where there is not a valid JWT. Just return the original response

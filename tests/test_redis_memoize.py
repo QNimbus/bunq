@@ -158,11 +158,16 @@ def test_key_generation(mock_redis_wrapper: MockRedisWrapper, mock_json_serializ
         memoized_get_instance_id_2_expected_key_format = f"InstanceMethodsClass:42:get_instance_id:{mock_pickle_dumps.return_value}"
         memoized_get_instance_id_3_expected_key_format = f"InstanceMethodsClass:42:get_instance_id:{mock_pickle_dumps.return_value}"
 
+        # It is necessary to mock the return value of the RedisMemoizer.is_method method because the RedisMemoizer.generate_key method calls it to determine if the function is a standalone function or a method.
+        # This doesn't work for mocked or spy functions, so we need to mock the return value.
+        mocker.patch("libs.redis_memoizer.RedisMemoizer.is_method", return_value=False)
+
         _ = memoized_x_squared_function(3)
         spy_x_squared_function.assert_called_once_with(3)
         mock_pickle_dumps.assert_called_with(((3,), {}))
 
-        # It is necessary to mock the return value of the RedisMemoizer.is_method method because of the way 'is_method' is implemented
+        # It is necessary to mock the return value of the RedisMemoizer.is_method method because the RedisMemoizer.generate_key method calls it to determine if the function is a standalone function or a method.
+        # This doesn't work for mocked or spy functions, so we need to mock the return value.
         mocker.patch("libs.redis_memoizer.RedisMemoizer.is_method", return_value=True)
 
         _ = memoized_get_instance_id_1(instance)
@@ -210,8 +215,6 @@ def test_is_method():
     assert RedisMemoizer.is_method(RedisMemoizer(expires=1, secure=False).decorator) is True
 
     # Test with a class method, RedisMemoizer.is_method should return True for staticmethod
-    assert RedisMemoizer.is_method(RedisMemoizer.generate_key) is True
-    assert RedisMemoizer.is_method(RedisMemoizer(expires=1, secure=False).generate_key) is True
     assert RedisMemoizer.is_method(RedisMemoizer.generate_key) is True
     assert RedisMemoizer.is_method(RedisMemoizer(expires=1, secure=False).generate_key) is True
 

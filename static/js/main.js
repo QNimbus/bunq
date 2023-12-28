@@ -1,18 +1,30 @@
 // Description: Main JavaScript file for the application
 
+import { Utils, ajax } from "./ajax.js";
+
 const main = (() => {
   document.addEventListener("DOMContentLoaded", () => {
+    /* Modal variables */
     const modal = document.getElementById("detailModal");
     const modalText = document.getElementById("modal-text");
-    const loginForm = document.getElementById("login-form");
-    const lougoutButton = document.getElementById("logout-button");
     const rootStyle = getComputedStyle(document.documentElement);
     const transitionDuration = rootStyle.getPropertyValue(
       "--modal-transition-duration"
     );
     const durationInMs = parseFloat(transitionDuration) * 1000; // Convert the duration from seconds to milliseconds for setTimeout
 
-    /* DOM functions */
+    /* Login form variables */
+    const loginForm = document.getElementById("login-form");
+
+    /* NavBar variables */
+    const lougoutButton = document.getElementById("logout-button");
+    const requestsTable = document.getElementById("table-requests");
+
+    /* Table variables */
+    const selectAllCheckbox = document.getElementById("select-all");
+    const removeAllButton = document.getElementById("remove-all");
+
+    /* DOM helper functions */
 
     function toggleDetailRow(clickedRow) {
       const detailRow = clickedRow.nextElementSibling;
@@ -52,6 +64,38 @@ const main = (() => {
           }
         }
         sibling = sibling.nextElementSibling;
+      }
+    }
+
+    function toggleRowHighlight(targetElement, highlight) {
+      const row = targetElement.closest("tr");
+      if (!row) return;
+
+      const previousSibling = row.previousElementSibling;
+      const nextSibling = row.nextElementSibling;
+
+      if (
+        (row.classList.contains("main-row") &&
+          nextSibling?.classList.contains("detail-row")) ||
+        (row.classList.contains("detail-row") &&
+          previousSibling?.classList.contains("main-row"))
+      ) {
+        row.classList.toggle("highlight", highlight);
+        (row.classList.contains("main-row")
+          ? nextSibling
+          : previousSibling
+        ).classList.toggle("highlight", highlight);
+      }
+    }
+
+    function handleTableRowClick(clickedElement) {
+      const mainRow = clickedElement.closest(".main-row");
+      if (
+        mainRow &&
+        mainRow.tagName === "TR" &&
+        !["INPUT", "BUTTON"].includes(clickedElement.tagName)
+      ) {
+        toggleDetailRow(mainRow);
       }
     }
 
@@ -116,65 +160,17 @@ const main = (() => {
 
     /* Event listeners */
 
-    document.addEventListener("click", (event) => {
-      const clickedElement = event.target;
-
-      if (clickedElement.hasAttribute("data-modal-title")) {
-        showModal(event);
-      } else if (
-        clickedElement.classList.contains("close") ||
-        clickedElement === modal
-      ) {
-        closeModal();
-      } else {
-        handleTableRowClick(clickedElement);
-      }
-    });
-
-    document.addEventListener("mouseover", (event) => {
-      toggleRowHighlight(event.target, true);
-    });
-
-    document.addEventListener("mouseout", (event) => {
-      toggleRowHighlight(event.target, false);
-    });
-
-    function handleTableRowClick(clickedElement) {
-      const mainRow = clickedElement.closest(".main-row");
-      if (
-        mainRow &&
-        mainRow.tagName === "TR" &&
-        !["INPUT", "BUTTON"].includes(clickedElement.tagName)
-      ) {
-        toggleDetailRow(mainRow);
-      }
+    // Load the first page of requests, if the table exists
+    if (requestsTable) {
+      ajax.loadPage();
     }
 
-    function toggleRowHighlight(targetElement, highlight) {
-      const row = targetElement.closest("tr");
-      if (!row) return;
-
-      const previousSibling = row.previousElementSibling;
-      const nextSibling = row.nextElementSibling;
-
-      if (
-        (row.classList.contains("main-row") &&
-          nextSibling?.classList.contains("detail-row")) ||
-        (row.classList.contains("detail-row") &&
-          previousSibling?.classList.contains("main-row"))
-      ) {
-        row.classList.toggle("highlight", highlight);
-        (row.classList.contains("main-row")
-          ? nextSibling
-          : previousSibling
-        ).classList.toggle("highlight", highlight);
-      }
-    }
-
+    // Login form submission
     if (loginForm) {
       loginForm.addEventListener("submit", submitLoginForm);
     }
 
+    // Logout button click
     if (lougoutButton) {
       lougoutButton.addEventListener("click", () => {
         fetch("/logout", { method: "DELETE" })
@@ -191,5 +187,64 @@ const main = (() => {
           });
       });
     }
+
+    // Select all checkbox click
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener("change", (event) => {
+        const rowCheckboxes = document.querySelectorAll(".row-checkbox");
+        rowCheckboxes.forEach((checkbox) => {
+          checkbox.checked = event.target.checked;
+        });
+      });
+    }
+
+    document.addEventListener("change", (event) => {
+      // Return early if change event is not from a checkbox
+      if (event.target.type !== "checkbox") return;
+
+      /* If any of the .row-checkbox elements are checked, enable the delete button */
+      const checkedCheckboxes = document.querySelectorAll(
+        ".row-checkbox:checked"
+      );
+
+      if (checkedCheckboxes.length > 0) {
+        removeAllButton.classList.remove("disabled");
+      } else {
+        removeAllButton.classList.add("disabled");
+      }
+    });
+
+    // Global click event listener
+    document.addEventListener("click", (event) => {
+      const clickedElement = event.target;
+
+      if (
+        clickedElement.hasAttribute("data-action") &&
+        clickedElement.getAttribute("data-action") === "delete"
+      ) {
+        const requestUuid = clickedElement.getAttribute("data-request-uuid");
+
+        ajax.deleteRequest(requestUuid);
+      } else if (clickedElement.hasAttribute("data-modal-title")) {
+        showModal(event);
+      } else if (
+        clickedElement.classList.contains("close") ||
+        clickedElement === modal
+      ) {
+        closeModal();
+      } else if (clickedElement.classList.contains("rotating-chevron")) {
+        handleTableRowClick(clickedElement);
+      }
+    });
+
+    // Global mouseover and mouseout event listeners
+    document.addEventListener("mouseover", (event) => {
+      toggleRowHighlight(event.target, true);
+    });
+
+    // Global mouseover and mouseout event listeners
+    document.addEventListener("mouseout", (event) => {
+      toggleRowHighlight(event.target, false);
+    });
   });
 })();

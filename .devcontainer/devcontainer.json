@@ -1,75 +1,71 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Ubuntu",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	// "image": "mcr.microsoft.com/devcontainers/base:jammy",
-	"dockerComposeFile": "docker-compose.yaml",
-	"service": "app",
-	// The 'workspaceFolder' property is the path VS Code should open by default when
-	// connected. Corresponds to a volume mount in .devcontainer/docker-compose.yml
-	"workspaceFolder": "/workspace",
-	"remoteEnv": {
-		"PYTHONPATH": "${containerWorkspaceFolder}"
-	},
-	"forwardPorts": [
-		6379
-	],
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-python.black-formatter",
-				"vsls-contrib.gistfs",
-				"ms-python.pylint",
-				"GitHub.copilot",
-				"esbenp.prettier-vscode"
-			],
-			"settings": {
-				"dev.containers.copyGitConfig": true,
-				"dev.containers.gitCredentialHelperConfigLocation": "global",
-				"editor.formatOnSave": true,
-				"jupyter.interactiveWindow.textEditor.executeSelection": true,
-				"python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
-				"python.analysis.typeCheckingMode": "off",
-				"pylint.pythonPath": "/usr/local/python/current/bin/python",
-				"pylint.args": [
-					"--disable",
-					"C0301,C0114,W1203"
-				],
-				"[python]": {
-					"editor.defaultFormatter": "ms-python.black-formatter"
-				}
-			}
-		}
-	},
-	"features": {
-		"ghcr.io/devcontainers/features/docker-in-docker": {
-			"version": "latest"
-		},
-		"ghcr.io/devcontainers/features/python:1": {
-			"installTools": false,
-			"version": "3.11"
-		},
-		"ghcr.io/devcontainers-contrib/features/chisel:1": {
-			"version": "latest"
-		},
-		"ghcr.io/devcontainers-contrib/features/npm-package:1.0.3": {
-			"package": "stylelint"
-		}
-	},
-	"postCreateCommand": {
-		"ownership": "sudo chown -R vscode:vscode ${containerWorkspaceFolder}",
-		"executable": "sudo chmod +x ${containerWorkspaceFolder}/scripts/*.sh",
-		"pip": "pip3 --disable-pip-version-check --no-cache-dir install -r requirements.txt"
-	}
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip3 install --user -r requirements.txt",
-	// Configure tool-specific properties.
-	// "customizations": {},
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+  "name": "Ubuntu",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  // "image": "mcr.microsoft.com/devcontainers/base:jammy",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app",
+  // The 'workspaceFolder' property is the path VS Code should open by default when
+  // connected. Corresponds to a volume mount in .devcontainer/docker-compose.yml
+  "workspaceFolder": "/workspace",
+  "remoteEnv": {
+    "PYTHONPATH": "${containerWorkspaceFolder}"
+  },
+  "forwardPorts": [6379],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.black-formatter",
+        "vsls-contrib.gistfs",
+        "ms-python.pylint",
+        "GitHub.copilot",
+        "esbenp.prettier-vscode",
+        "ecmel.vscode-html-css"
+      ],
+      "settings": {
+        "dev.containers.copyGitConfig": true,
+        "dev.containers.gitCredentialHelperConfigLocation": "global",
+        "editor.formatOnSave": true,
+        "jupyter.interactiveWindow.textEditor.executeSelection": true,
+        "python.defaultInterpreterPath": "/usr/local/python/current/bin/python",
+        "python.analysis.typeCheckingMode": "off",
+        "pylint.pythonPath": "/usr/local/python/current/bin/python",
+        "pylint.args": ["--disable", "C0301,C0114,W1203"],
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
+        }
+      }
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "installTools": false,
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers-contrib/features/chisel:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers-contrib/features/npm-package:1.0.3": {
+      "package": "stylelint"
+    }
+  },
+  "postCreateCommand": {
+    "ownership": "chown -R vscode:vscode ${containerWorkspaceFolder}",
+    "pip": "pip3 install --disable-pip-version-check --no-cache-dir --no-deps -r ${containerWorkspaceFolder}/requirements.txt"
+    // "executable": "chmod +x ${containerWorkspaceFolder}/scripts/*.{sh,py}"
+  }
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "pip3 install --user -r requirements.txt",
+  // Configure tool-specific properties.
+  // "customizations": {},
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
 }

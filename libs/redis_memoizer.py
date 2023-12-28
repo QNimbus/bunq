@@ -69,8 +69,12 @@ class RedisMemoizer:  # pylint: disable=too-few-public-methods
         generate_key(func: callable, args: tuple, kwargs: dict, instance_identifier: str) -> str:
             Generate a unique key for caching based on the function, arguments, and instance identifier.
 
-        is_method_with_instance(func: callable, args: tuple) -> bool:
-            Check if the given function is a method with an instance or a class method.
+        get_all_classes(module) -> set:
+            Retrieves all classes from a given module.
+
+        is_method(func: callable) -> bool:
+            Check if the given function is a method belonging to a class or a class instance (object),
+            or if it's a standalone function.
 
         get_instance_id(instance: object, instance_identifier: str) -> any:
             Get the instance ID based on the provided instance and instance identifier.
@@ -163,9 +167,9 @@ class RedisMemoizer:  # pylint: disable=too-few-public-methods
             all_classes.update(RedisMemoizer.get_all_classes(module))
 
         for cls in all_classes:
-            if func_name in cls.__dict__:
-                obj_member = cls.__dict__[func_name]
-                return isinstance(obj_member, types.FunctionType)
+            for name, member in inspect.getmembers(cls):
+                if name == func_name and callable(member):
+                    return True
 
         return False
 

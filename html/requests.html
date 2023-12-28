@@ -2,43 +2,217 @@
 {% block title %}HTTP Request Data{% endblock %}
 {% block head %}
 {{ super() }}
-<script src="/static/js/ajax.js"></script>
 {% endblock %}
 {% block content %}
 <div id="requests">
-  <h1>HTTP Request Data</h1>
-  <div id="table">
-    <table class="pure-table pure-table-horizontal">
-      <thead>
-        <tr>
-          <th class="fixed-width-20"></th>
-          <th class="fixed-width-20 text-center"><input type="checkbox" /></th>
-          <th>Time</th>
-          <th class="text-center">Result</th>
-          <th>User</th>
-          <th class="fixed-width-240">Action</th>
-          <th>Callback type</th>
-          <th class="fixed-width-150 text-right">Actions</th>
-        </tr>
-      </thead>
-
-      <tbody id="request-table-body"></tbody>
-
-
-    </table>
-  </div>
-  <div id="pagination">
-    <button id="prev-page">Previous</button>
-    <span id="page-numbers"></span>
-    <button id="next-page">Next</button>
-  </div>
-  <!-- The Modal -->
-  <div id="detailModal" class="modal">
-    <!-- Modal content -->
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <p id="modal-text">Header details will appear here.</p>
+    <h1>HTTP Request Data</h1>
+    <div id="table">
+        <div id="table-toolbar">
+            <div class="toolbar-title">
+                <div class="button">
+                    <div class="svg-icons"><svg width="1em" height="1em" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M15.2929 3.29289C15.6834 2.90237 16.3166 2.90237 16.7071 3.29289L22.3657 8.95147C23.1216 9.70743 22.5862 11 21.5172 11H2C1.44772 11 1 10.5523 1 10C1 9.44772 1.44772 9 2 9H19.5858L15.2929 4.70711C14.9024 4.31658 14.9024 3.68342 15.2929 3.29289ZM4.41421 15H22C22.5523 15 23 14.5523 23 14C23 13.4477 22.5523 13 22 13H2.48284C1.41376 13 0.878355 14.2926 1.63431 15.0485L7.29289 20.7071C7.68342 21.0976 8.31658 21.0976 8.70711 20.7071C9.09763 20.3166 9.09763 19.6834 8.70711 19.2929L4.41421 15Z" />
+                        </svg></div>
+                    Requests
+                </div>
+            </div>
+            <div class="toolbar-actions">
+                <div id="remove-all" class="button button-warning disabled">
+                    <div class="svg-icons mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="icon inline-flex icon-sm" aria-hidden="true" role="img">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </div>
+                    Remove
+                </div>
+            </div>
+            <div class="toolbar-settings">
+                <div class="button">
+                    <div class="svg-icons ml-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="3px" stroke-linecap="round" stroke-linejoin="round"
+                            class="space-right" aria-hidden="true" aria-label="Settings">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <table id="table-requests" class="pure-table pure-table-horizontal">
+            <thead>
+                <tr>
+                    <th class="fixed-width-20"></th>
+                    <th class="fixed-width-20 text-center"><input type="checkbox" id="select-all" /></th>
+                    <th>
+                        <div class="table-header">
+                            <div class="button">Time
+                                <div class="svg-icons ml-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 8 12"
+                                        class="app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M4.473.727a.593.593 0 1 0-1.186 0h1.186ZM3.88
+                      11.274l-.406.432c.233.22.599.214.826-.013l-.42-.42Zm3.056-2.218a.593.593 0 1
+                      0-.839-.839l.84.84Zm-5.45-.851a.593.593 0 1
+                      0-.814.864l.813-.864Zm1.8-7.478v10.547h1.187V.727H3.287Zm2.811 7.49-2.636 2.637.839.84
+                      2.636-2.638-.839-.839Zm-1.81 2.625L1.485 8.205l-.813.864 2.802 2.637.813-.864Z">
+                                        </path>
+                                    </svg>
+                                    <svg class="-ml-1" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                        viewBox="0 0 8 12"
+                                        class="-ml-1 app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M3.526 11.273a.593.593 0 0 0 1.187 0H3.526ZM4.12.727l.406-.432A.593.593 0 0 0
+                      3.7.307l.42.42ZM1.063 2.944a.593.593 0 1 0 .84.839l-.84-.84Zm5.451.851a.593.593 0 1 0
+                      .814-.864l-.814.864Zm-1.801 7.478V.727H3.526v10.546h1.187Zm-2.81-7.49 2.636-2.637L3.7.307 1.063
+                      2.944l.84.839Zm1.81-2.624 2.801 2.636.814-.864L4.526.295l-.813.864Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th class="text-center">
+                        <div class="table-header">
+                            <div class="button">Result
+                                <div class="svg-icons ml-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 8 12"
+                                        class="app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M4.473.727a.593.593 0 1 0-1.186 0h1.186ZM3.88
+                      11.274l-.406.432c.233.22.599.214.826-.013l-.42-.42Zm3.056-2.218a.593.593 0 1
+                      0-.839-.839l.84.84Zm-5.45-.851a.593.593 0 1
+                      0-.814.864l.813-.864Zm1.8-7.478v10.547h1.187V.727H3.287Zm2.811 7.49-2.636 2.637.839.84
+                      2.636-2.638-.839-.839Zm-1.81 2.625L1.485 8.205l-.813.864 2.802 2.637.813-.864Z">
+                                        </path>
+                                    </svg>
+                                    <svg class="-ml-1" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                        viewBox="0 0 8 12"
+                                        class="-ml-1 app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M3.526 11.273a.593.593 0 0 0 1.187 0H3.526ZM4.12.727l.406-.432A.593.593 0 0 0
+                      3.7.307l.42.42ZM1.063 2.944a.593.593 0 1 0 .84.839l-.84-.84Zm5.451.851a.593.593 0 1 0
+                      .814-.864l-.814.864Zm-1.801 7.478V.727H3.526v10.546h1.187Zm-2.81-7.49 2.636-2.637L3.7.307 1.063
+                      2.944l.84.839Zm1.81-2.624 2.801 2.636.814-.864L4.526.295l-.813.864Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="table-header">
+                            <div class="button">User
+                                <div class="svg-icons ml-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 8 12"
+                                        class="app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M4.473.727a.593.593 0 1 0-1.186 0h1.186ZM3.88
+                      11.274l-.406.432c.233.22.599.214.826-.013l-.42-.42Zm3.056-2.218a.593.593 0 1
+                      0-.839-.839l.84.84Zm-5.45-.851a.593.593 0 1
+                      0-.814.864l.813-.864Zm1.8-7.478v10.547h1.187V.727H3.287Zm2.811 7.49-2.636 2.637.839.84
+                      2.636-2.638-.839-.839Zm-1.81 2.625L1.485 8.205l-.813.864 2.802 2.637.813-.864Z">
+                                        </path>
+                                    </svg>
+                                    <svg class="-ml-1" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                        viewBox="0 0 8 12"
+                                        class="-ml-1 app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M3.526 11.273a.593.593 0 0 0 1.187 0H3.526ZM4.12.727l.406-.432A.593.593 0 0 0
+                      3.7.307l.42.42ZM1.063 2.944a.593.593 0 1 0 .84.839l-.84-.84Zm5.451.851a.593.593 0 1 0
+                      .814-.864l-.814.864Zm-1.801 7.478V.727H3.526v10.546h1.187Zm-2.81-7.49 2.636-2.637L3.7.307 1.063
+                      2.944l.84.839Zm1.81-2.624 2.801 2.636.814-.864L4.526.295l-.813.864Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th class="fixed-width-240">
+                        <div class="table-header">
+                            <div class="button">Action
+                                <div class="svg-icons ml-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 8 12"
+                                        class="app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M4.473.727a.593.593 0 1 0-1.186 0h1.186ZM3.88
+                      11.274l-.406.432c.233.22.599.214.826-.013l-.42-.42Zm3.056-2.218a.593.593 0 1
+                      0-.839-.839l.84.84Zm-5.45-.851a.593.593 0 1
+                      0-.814.864l.813-.864Zm1.8-7.478v10.547h1.187V.727H3.287Zm2.811 7.49-2.636 2.637.839.84
+                      2.636-2.638-.839-.839Zm-1.81 2.625L1.485 8.205l-.813.864 2.802 2.637.813-.864Z">
+                                        </path>
+                                    </svg>
+                                    <svg class="-ml-1" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                        viewBox="0 0 8 12"
+                                        class="-ml-1 app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M3.526 11.273a.593.593 0 0 0 1.187 0H3.526ZM4.12.727l.406-.432A.593.593 0 0 0
+                      3.7.307l.42.42ZM1.063 2.944a.593.593 0 1 0 .84.839l-.84-.84Zm5.451.851a.593.593 0 1 0
+                      .814-.864l-.814.864Zm-1.801 7.478V.727H3.526v10.546h1.187Zm-2.81-7.49 2.636-2.637L3.7.307 1.063
+                      2.944l.84.839Zm1.81-2.624 2.801 2.636.814-.864L4.526.295l-.813.864Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="table-header">
+                            <div class="button">Callback type
+                                <div class="svg-icons ml-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 8 12"
+                                        class="app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M4.473.727a.593.593 0 1 0-1.186 0h1.186ZM3.88
+                      11.274l-.406.432c.233.22.599.214.826-.013l-.42-.42Zm3.056-2.218a.593.593 0 1
+                      0-.839-.839l.84.84Zm-5.45-.851a.593.593 0 1
+                      0-.814.864l.813-.864Zm1.8-7.478v10.547h1.187V.727H3.287Zm2.811 7.49-2.636 2.637.839.84
+                      2.636-2.638-.839-.839Zm-1.81 2.625L1.485 8.205l-.813.864 2.802 2.637.813-.864Z">
+                                        </path>
+                                    </svg>
+                                    <svg class="-ml-1" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"
+                                        viewBox="0 0 8 12"
+                                        class="-ml-1 app-react-components-datatables-TableHeaderSortIcons-module__sort-icon"
+                                        aria-hidden="true">
+                                        <path d=" M3.526 11.273a.593.593 0 0 0 1.187 0H3.526ZM4.12.727l.406-.432A.593.593 0 0 0
+                      3.7.307l.42.42ZM1.063 2.944a.593.593 0 1 0 .84.839l-.84-.84Zm5.451.851a.593.593 0 1 0
+                      .814-.864l-.814.864Zm-1.801 7.478V.727H3.526v10.546h1.187Zm-2.81-7.49 2.636-2.637L3.7.307 1.063
+                      2.944l.84.839Zm1.81-2.624 2.801 2.636.814-.864L4.526.295l-.813.864Z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th class="fixed-width-150 text-right">
+                        <div class="table-header">Actions</div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="table-requests-body"></tbody>
+        </table>
+        <div id="pagination">
+            <button id="prev-page">Previous</button>
+            <span id="page-numbers"></span>
+            <button id="next-page">Next</button>
+        </div>
     </div>
-  </div>
+    <!-- The Modal -->
+    <div id="detailModal" class="modal">
+        <!-- Modal content -->
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="modal-text">Header details will appear here.</p>
+        </div>
+    </div>
 </div>
 {% endblock %}

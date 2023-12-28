@@ -111,7 +111,13 @@ def delete_request(request_id: str):
     Returns:
     - JSON response with a success message.
     """
-    RedisWrapper.remove_request_data(request_id=request_id)
+    try:
+        RedisWrapper.unlog_request(request_id=request_id)
+        RedisWrapper.remove_request_data(request_id=request_id)
+    except Exception as error:  # pylint: disable=broad-except
+        logger.error(error)
+        return jsonify({"message": "Internal server error"}), 500
+
     return jsonify({"message": "Success"})
 
 
@@ -340,7 +346,11 @@ def refresh():
     new_token = create_access_token(identity=user.id, fresh=False)
 
     response = jsonify({"msg": "Token refreshed"})
-    set_access_cookies(response, new_token)
+        
+    # Set the JWT cookies
+    access_token_cookie_max_age = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].total_seconds() - 1
+    set_access_cookies(response, new_token, max_age=access_token_cookie_max_age)
+    
     return response, 200
 
 

@@ -214,7 +214,7 @@ class RedisWrapper:
             key (str): Redis key.
         """
         cls._ensure_initialized()
-        cls._client.delete(name=key)
+        cls._client.delete(key)
 
     @classmethod
     def flushdb(cls):
@@ -276,6 +276,24 @@ class RedisWrapper:
             RedisWrapper.set("request_log", request_log)
 
     @classmethod
+    def unlog_request(cls, *, request_id: str) -> None:
+        """
+        Unlogs a request ID from Redis in a thread-safe manner.
+
+        Args:
+            request_id (str): The request ID to unlog.
+
+        Returns:
+            None
+        """
+        with RedisWrapper.get_lock("request_log_lock"):
+            request_log = RedisWrapper.get("request_log") or []
+
+            if request_id in request_log:
+                request_log.remove(request_id)
+                RedisWrapper.set("request_log", request_log)
+
+    @classmethod
     def get_request_log(cls) -> list:
         """
         Gets the request log.
@@ -318,9 +336,8 @@ class RedisWrapper:
         Returns:
             None
         """
-        with RedisWrapper.get_lock("requests_lock"):
-            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
-                RedisWrapper.set_secure(request_id, data)
+        with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+            RedisWrapper.set_secure(request_id, data)
 
     @classmethod
     def get_request_data(cls, *, request_id: str) -> Optional[dict]:
@@ -333,9 +350,8 @@ class RedisWrapper:
         Returns:
             Optional[dict]: The data for the request if it exists, None otherwise.
         """
-        with RedisWrapper.get_lock("requests_lock"):
-            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
-                return RedisWrapper.get_secure(request_id)
+        with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+            return RedisWrapper.get_secure(request_id)
 
     @classmethod
     def remove_request_data(cls, *, request_id: str) -> None:
@@ -348,9 +364,8 @@ class RedisWrapper:
         Returns:
             None
         """
-        with RedisWrapper.get_lock("requests_lock"):
-            with RedisWrapper.get_lock(f"request_lock::{request_id}"):
-                RedisWrapper.delete(request_id)
+        with RedisWrapper.get_lock(f"request_lock::{request_id}"):
+            RedisWrapper.delete(request_id)
 
     @classmethod
     def get_all_request_data(cls) -> dict[str, dict]:

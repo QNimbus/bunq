@@ -11,13 +11,23 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
         integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
-    <script src="/static/js/main.js"></script>
+    <script type="module" src="/static/js/main.js"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
     <title>{% block title %}{% endblock %}</title>
     {% endblock %}
 </head>
 
 <body>
+    <div id="navbar" class="navbar">
+        <div id="navbar-title">
+            <a href="/"><i class="fas fa-home mr-1"></i>BeSquared</a>
+        </div>
+        <div id="navbar-links">
+            <a href="/requests">Requests</a>
+            <a href="/users"><i class="fa-regular fa-user"></i></a>
+            <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        </div>
+    </div>
     <div id="container">
         <div id="content">
             {% block content %}{% endblock %}
