@@ -9,9 +9,10 @@ Dockerfile*
 
 users.json
 
-conf/*
-data/*
-logs/*
+**/conf/*
+**/export/*
+**/data/*
+**/logs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -81,7 +81,7 @@ def create_server(allowed_ips: list[str] = None) -> Flask:
     logger.info(f"Starting server (module: {__name__}))")
 
     # Create and configure the Flask application
-    app = Flask(__name__, template_folder="html")
+    app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 
     app.observer = Observer()
     app.executor = ThreadPoolExecutor(max_workers=4)

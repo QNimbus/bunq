@@ -6,9 +6,10 @@
 *.bak
 *.old
 
-conf/*
-data/*
-logs/*
+**/conf/*
+**/export/*
+**/data/*
+**/logs/*
 
 users.json
 
@@ -53,3 +54,10 @@ coverage.xml
 !*.example
 venv/
 .idea/
+
+# dependencies
+**/node_modules
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

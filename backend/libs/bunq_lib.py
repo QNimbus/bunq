@@ -587,27 +587,6 @@ class BunqLib:
 
         return statements
 
-    def delete_all_statements(
-        self,
-        account: MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings,
-    ) -> None:
-        """
-        Deletes all statements for a given account.
-
-        Args:
-            account (MonetaryAccountBank | MonetaryAccountJoint | MonetaryAccountSavings): The account to delete statements for.
-
-        Returns:
-            None
-
-        Raises:
-            StatementDeletionError: If there is an error in deleting the statements.
-        """
-        statements = self.get_all_statements(account)
-
-        for statement in statements:
-            self.delete_statement(statement.id_, account.id_)
-
     @property
     def user(self) -> Union[UserCompany, UserPerson]:
         """

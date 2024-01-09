@@ -1,5 +1,5 @@
 {
-    "python.envFile": "${workspaceFolder}/.env",
+    "python.envFile": "${workspaceFolder}/backend/.env",
     "black-formatter.args": [
         "--line-length",
         "200"
@@ -9,13 +9,13 @@
             "fileMatch": [
                 "*.rules.json"
             ],
-            "url": "/schema/rules.schema.json"
+            "url": "/backend/schema/rules.schema.json"
         },
         {
             "fileMatch": [
                 "*.cb.json"
             ],
-            "url": "/schema/callback.schema.json"
+            "url": "/backend/schema/callback.schema.json"
         }
     ],
 }

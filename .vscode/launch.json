@@ -71,7 +71,7 @@
       "name": "Bunq: Debug app.py (create-config)",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/app.py",
+      "program": "${workspaceFolder}/backend/app.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
@@ -82,7 +82,7 @@
       "name": "Bunq: Debug app.py (create-payment)",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/app.py",
+      "program": "${workspaceFolder}/backend/app.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env",
@@ -108,7 +108,7 @@
       "name": "Bunq: Create production configuration",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/app.py",
+      "program": "${workspaceFolder}/backend/app.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "args": [
@@ -125,8 +125,9 @@
       "name": "Bunq: Export all statements",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/app.py",
+      "program": "${workspaceFolder}/backend/app.py",
       "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env-dev",
       "cwd": "${workspaceFolder}",
       "args": [
         "--production",
@@ -147,6 +148,7 @@
       "module": "gunicorn",
       "envFile": "${workspaceFolder}/.env-dev",
       "args": [
+        "--chdir=./backend",
         "--workers=1",
         "--timeout=0", // This disables the timeout, useful for debugging
         "--bind=127.0.0.1:5000",
@@ -161,8 +163,9 @@
       "name": "Bunq: Delete all statements",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/app.py",
+      "program": "${workspaceFolder}/backend/app.py",
       "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env-dev",
       "cwd": "${workspaceFolder}",
       "args": [
         "--production",

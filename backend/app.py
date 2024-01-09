@@ -17,11 +17,12 @@ from libs.date import cap_date
 from libs.logger import setup_logger
 from libs.argparser import Action, CLIArgs
 from libs.utils import write_statement_to_file
-from libs.exceptions import ConfigFileExistsError, PathNotWritableError
+from libs.exceptions import ConfigFileExistsError, StatementDeletionError, PathNotWritableError
 from libs.share_lib import ShareLib
 from libs.bunq_lib import (
     BunqLib,
     Utilites,
+    StatementOptions,
     StatementFormat,
     RegionalFormat,
     RequestInquiryOptions,
@@ -120,6 +121,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
                 date_start=date_start,
                 date_end=date_end,
                 path=path,
+                only_active=kwargs["only_active"],
             )
             return
 
@@ -258,6 +260,7 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         date_start: str,
         date_end: str,
         path: str,
+        only_active: bool = False,
     ):
         """
         Attempts to export statements from the current user's Bunq account.
@@ -270,22 +273,23 @@ class BunqApp:  # pylint: disable=too-few-public-methods
 
         self.logger.info(f"Attempting to export all statements for user {user.display_name} ({user.id_})")
 
-        accounts_active = bunq.get_all_accounts(only_active=True)
+        accounts = bunq.get_all_accounts(only_active=only_active)
 
-        self.logger.info(f"Found {len(accounts_active)} active accounts")
+        self.logger.info(f"Found {len(accounts)} active accounts")
 
         # Loop over accounts 'accounts_active'
-        for account in accounts_active:
+        for account in accounts:
             self.logger.info(f"Attempting to export statements for account '{account.description}' ({account.id_})")
 
             # Generate statement
-            statement_id = bunq.create_statement(
-                account.id_,
-                date_start,
-                date_end,
-                StatementFormat.CSV,
-                RegionalFormat.EUROPEAN,
+            statement_options: StatementOptions = StatementOptions(
+                monetary_account_id=account.id_,
+                date_start=date_start,
+                date_end=date_end,
+                statement_format=StatementFormat.CSV,
+                regional_format=RegionalFormat.EUROPEAN,
             )
+            statement_id = bunq.create_statement(statement_options)
 
             # Export statement
             statement = bunq.get_statement(statement_id, account.id_)
@@ -307,7 +311,10 @@ class BunqApp:  # pylint: disable=too-few-public-methods
                 force=True,
             )
 
-            bunq.delete_statement(statement.id_, account.id_)
+            try:
+                bunq.delete_statement(statement.id_, account.id_)
+            except StatementDeletionError as exc:
+                self.logger.warning(f"Failed to delete statement for account '{account.description}' with statement id {statement_id}: {exc}")
 
             self.logger.info(f"Exported statement for account '{account.description}' to '{filename}'")
 
@@ -380,7 +387,11 @@ class BunqApp:  # pylint: disable=too-few-public-methods
         for account in accounts_active:
             self.logger.info(f"Removing statements for account '{account.description}' ({account.id_})")
 
-            bunq.delete_all_statements(account)
+            for statement in bunq.get_all_statements(account):
+                try:
+                    bunq.delete_statement(statement.id_, account.id_)
+                except StatementDeletionError as exc:
+                    self.logger.warning(f"Failed to delete statement for account '{account.description}' with statement id {statement.id_}: {exc}")
 
         bunq.update_context()
 

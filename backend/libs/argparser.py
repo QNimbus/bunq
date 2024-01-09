@@ -74,10 +74,11 @@ class CLIArgs:
     _ACTION_CREATE_PAYMENT_DESTINATION_IBAN = "--destination-iban"
     _ACTION_CREATE_PAYMENT_DESCRIPTION = "--description"
     _ACTION_CREATE_PAYMENT_ALLOW_THIRD_PARTY = "--allow-third-party"
-    _ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE = "--include-inactive"
+    _ACTION_SHOW_ACCOUNTS_ONLY_ACTIVE = "--only-active"
     _ACTION_EXPORT_PATH = "--path"
     _ACTION_EXPORT_STARTDATE = "--start-date"
     _ACTION_EXPORT_ENDDATE = "--end-date"
+    _ACTION_EXPORT_ONLY_ACTIVE = "--only-active"
 
     def __init__(self, description: str = ""):
         self.parser = argparse.ArgumentParser(description=description)
@@ -159,16 +160,17 @@ class CLIArgs:
         self.action_create_payment_parser.add_argument(CLIArgs._ACTION_CREATE_PAYMENT_ALLOW_THIRD_PARTY, action="store_true", default=False, help="Allow payments to third party accounts.")
 
         self.action_show_accounts_parser.add_argument(
-            CLIArgs._ACTION_SHOW_ACCOUNTS_INCLUDE_INACTIVE,
+            CLIArgs._ACTION_SHOW_ACCOUNTS_ONLY_ACTIVE,
             action="store_true",
             required=False,
-            help="Include inactive accounts.",
+            default=False,
+            help="Only show active accounts.",
         )
 
         self.action_export_parser.add_argument(
             CLIArgs._ACTION_EXPORT_PATH,
             required=False,
-            default=os.environ.get("EXPORT_PATH", "./data"),
+            default=os.environ.get("EXPORT_PATH", "./backend/export"),
             help="Exported statements path.",
         )
 
@@ -184,6 +186,14 @@ class CLIArgs:
             type=parse_date,
             required=True,
             help="End date in YYYY-MM-DD format",
+        )
+
+        self.action_export_parser.add_argument(
+            CLIArgs._ACTION_EXPORT_ONLY_ACTIVE,
+            action="store_true",
+            required=False,
+            default=False,
+            help="Only export active accounts.",
         )
 
         self.args = self.parser.parse_args()

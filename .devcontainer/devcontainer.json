@@ -39,8 +39,8 @@
     }
   },
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker": {
-      "version": "latest"
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "installTools": false,
@@ -48,14 +48,11 @@
     },
     "ghcr.io/devcontainers-contrib/features/chisel:1": {
       "version": "latest"
-    },
-    "ghcr.io/devcontainers-contrib/features/npm-package:1.0.3": {
-      "package": "stylelint"
     }
   },
   "postCreateCommand": {
     "ownership": "chown -R vscode:vscode ${containerWorkspaceFolder}",
-    "pip": "pip3 install --disable-pip-version-check --no-cache-dir --no-deps -r ${containerWorkspaceFolder}/requirements.txt"
+    "pip": "pip3 install --disable-pip-version-check --no-cache-dir --no-deps -r ${containerWorkspaceFolder}/backend/requirements.txt"
     // "executable": "chmod +x ${containerWorkspaceFolder}/scripts/*.{sh,py}"
   }
   // Features to add to the dev container. More info: https://containers.dev/features.

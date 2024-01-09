@@ -5,10 +5,10 @@ FROM python:slim
 WORKDIR /app
 
 # Copy requirements.txt into the container at /app
-COPY requirements.txt /app
+COPY backend/requirements.txt /app/backend
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
 # Copy the current directory contents into the container at /app
 COPY . /app
@@ -19,7 +19,7 @@ RUN pip install --upgrade pip
 # Make scripts executable
 RUN chmod +x /app/scripts/start_chisel.sh
 
-VOLUME /app/conf /app/rules /app/logs
+VOLUME /app/backend/conf /app/backend/rules /app/backend/logs
 
 # Environment variables
 ENV PYTHONWARNINGS=ignore
@@ -38,4 +38,4 @@ ENV JWT_SECRET_KEY=
 ENV APP_SECRET_KEY=
 
 # Run bunq callback server
-CMD [ "/bin/sh", "-c", "gunicorn --workers=${GUNICORN_WORKERS} --timeout=${GUNICORN_TIMEOUT} --bind=0.0.0.0:${GUNICORN_PORT} \"server:create_server()\"" ]
+CMD [ "/bin/sh", "-c", "gunicorn --pythonpath='backend/' --workers=${GUNICORN_WORKERS} --timeout=${GUNICORN_TIMEOUT} --bind=0.0.0.0:${GUNICORN_PORT} \"server:create_server()\"" ]

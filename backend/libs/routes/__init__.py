@@ -12,7 +12,7 @@ from datetime import datetime
 from pydantic import TypeAdapter
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
-from flask import jsonify, render_template, redirect, url_for, make_response, request, current_app
+from flask import jsonify, redirect, url_for, make_response, request, current_app
 from flask_jwt_extended import (
     create_access_token,
     set_access_cookies,
@@ -47,7 +47,7 @@ def health():
     Returns:
     - JSON response with a success message.
     """
-    return jsonify({"message": "Success"}, 200)
+    return jsonify({"status": "healthy"}, 200)
 
 
 @route("/api/requests", methods=["GET"])
@@ -101,7 +101,7 @@ def api_requests():
 
 @route("/api/requests/<request_id>", methods=["DELETE"])
 @jwt_required()
-def delete_request(request_id: str):
+def api_delete_request(request_id: str):
     """
     Deletes a request from Redis.
 
@@ -121,9 +121,9 @@ def delete_request(request_id: str):
     return jsonify({"message": "Success"})
 
 
-@route("/replay/<request_uuid>", methods=["GET"])
+@route("/api/replay/<request_uuid>", methods=["GET"])
 @jwt_required(fresh=True)
-def replay(request_uuid: str):
+def api_replay(request_uuid: str):
     """
     Handles replay requests via HTTP GET.
 
@@ -140,8 +140,8 @@ def replay(request_uuid: str):
     return jsonify({"message": "Success"})
 
 
-@route("/callback/<int:user_id>", methods=["POST"])
-def callback(user_id: int):
+@route("/api/callback/<int:user_id>", methods=["POST"])
+def api_callback(user_id: int):
     """
     Handles callbacks from another application via HTTP POST.
 
@@ -171,7 +171,7 @@ def callback(user_id: int):
         # Register the response in a separate thread
         Thread(target=RedisWrapper.set_request_data, kwargs={"request_id": request_id, "data": current_request}).start()
 
-        logger.info(f"[/callback/{user_id}] Invalid request: {request}")
+        logger.info(f"[/api/callback/{user_id}] Invalid request: {request}")
         return jsonify(response_message), 400
 
     # Fetch all available user ids from the app session
@@ -184,7 +184,7 @@ def callback(user_id: int):
         # Register the response in a separate thread
         Thread(target=RedisWrapper.set_request_data, kwargs={"request_id": request_id, "data": current_request}).start()
 
-        logger.info(f"[/callback/{user_id}] Invalid user id: {user_id}")
+        logger.info(f"[/api/callback/{user_id}] Invalid user id: {user_id}")
         return jsonify(response_message), 400
 
     try:
@@ -230,57 +230,21 @@ def callback(user_id: int):
                 target=handler, kwargs={"app_context": current_app.app_context(), "user_id": user_id, "request_id": request.request_id, "event_type": event_type, "callback_data": callback_data}
             ).start()
         else:
-            logger.info(f"[/callback/{user_id}] Unregistered event type {event_type.value}")
+            logger.info(f"[/api/callback/{user_id}] Unregistered event type {event_type.value}")
 
         return jsonify({"message": "Success"})
     except ValidationError:
         # Log the failed callback json data
         # failed_callback_logger.info(json.dumps(request_data))
 
-        logger.info(f"[/callback/{user_id}] Schema mismatch: {request}")
+        logger.info(f"[/api/callback/{user_id}] Schema mismatch: {request}")
 
         # Return HTTP 400 if the callback data did not match the schema
         return jsonify({"message": "Schema mismatch"}), 400
 
 
-@route("/", methods=["GET"])
-@jwt_required(optional=True)
-def main():
-    """
-    Returns the main page.
-
-    Returns:
-        HTML response with the main page.
-    """
-    user_connector: UserConnector = current_app.config["USER_CONNECTOR"]
-    user: User = user_connector.get_user(get_jwt_identity()) if get_jwt_identity() else None
-
-    next_url = request.args.get("next", "/")
-    is_valid_next_url(next_url)
-
-    return render_template("main.html", user=user, next="/requests")
-
-
-@route("/requests", methods=["GET"])
-@jwt_required()
-def requests():
-    """
-    Handles request log requests via HTTP GET.
-
-    Parameters:
-    - None
-
-    Returns:
-    - HTML response with a list of request ids.
-    """
-    user_connector: UserConnector = current_app.config["USER_CONNECTOR"]
-    user: User = user_connector.get_user(get_jwt_identity())
-
-    return render_template("requests.html", user=user)
-
-
-@route("/login", methods=["POST"])
-def login():
+@route("/api/login", methods=["POST"])
+def api_login():
     """
     Authenticates the user's credentials and generates an access token if the credentials are valid.
 
@@ -326,9 +290,9 @@ def login():
     return jsonify({"msg": "Bad username or password"}), 401
 
 
-@route("/token/refresh", methods=["POST"])
+@route("/api/token/refresh", methods=["POST"])
 @jwt_required(refresh=True)
-def refresh():
+def api_token_refresh():
     """
     Refreshes the JWT token for the current user.
 
@@ -346,17 +310,17 @@ def refresh():
     new_token = create_access_token(identity=user.id, fresh=False)
 
     response = jsonify({"msg": "Token refreshed"})
-        
+
     # Set the JWT cookies
     access_token_cookie_max_age = current_app.config["JWT_ACCESS_TOKEN_EXPIRES"].total_seconds() - 1
     set_access_cookies(response, new_token, max_age=access_token_cookie_max_age)
-    
+
     return response, 200
 
 
-@route("/logout", methods=["DELETE"])
+@route("/api/logout", methods=["DELETE"])
 @jwt_required()
-def logout():
+def api_logout():
     """
     Logs out the user by unsetting the JWT cookie.
 
@@ -381,3 +345,17 @@ def logout():
     response = make_response(redirect(redirect_url))
     unset_jwt_cookies(response)
     return response
+
+
+@route("/", defaults={"path": ""}, methods=["GET"])
+@route("/<path:path>", methods=["GET"])
+@jwt_required(optional=True)
+def catch_all(path):
+    return current_app.send_static_file("index.html")
+    # user_connector: UserConnector = current_app.config["USER_CONNECTOR"]
+    # user: User = user_connector.get_user(get_jwt_identity()) if get_jwt_identity() else None
+
+    # next_url = request.args.get("next", "/")
+    # is_valid_next_url(next_url)
+
+    # return render_template("main.html", user=user, next="/requests")
